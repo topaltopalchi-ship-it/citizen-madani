@@ -188,7 +188,7 @@ function App() {
     })
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       setUserEmail(session?.user.email ?? null)
-      if (!session) { setProfile(null); setRequests([]); setSelectedContact(null); setThreadMessages([]); setMessageDraft(''); setUnreadCount(0); threadLoadSequence.current += 1; setThreadLoading(false) }
+      if (!session) { setProfile(null); setRequests([]); setSelectedContact(null); setThreadMessages([]); setInboxMessages([]); setMessageDraft(''); setUnreadCount(0); threadLoadSequence.current += 1; setThreadLoading(false) }
     })
     return () => listener.subscription.unsubscribe()
   }, [])
@@ -285,7 +285,7 @@ function App() {
     if (!supabase) return
     const { error: logoutError } = await supabase.auth.signOut()
     if (logoutError) setError(logoutError.message)
-    else { setPage('خانه'); setSelectedContact(null); setThreadMessages([]); setMessageDraft(''); setContactQuery(''); setMessage('از حساب کاربری خارج شدید.') }
+    else { setPage('خانه'); setSelectedContact(null); setThreadMessages([]); setInboxMessages([]); setMessageDraft(''); setContactQuery(''); setUnreadCount(0); setMessage('از حساب کاربری خارج شدید.') }
   }
 
   const submitRequest = async (e: FormEvent) => {
