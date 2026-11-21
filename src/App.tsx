@@ -91,7 +91,7 @@ function App() {
       const userId = userData.user?.id
       if (!userId) return
       const [profileResult, peopleResult, requestResult] = await Promise.all([
-        client.from('employee_profiles').select('id,display_name,department,job_title,role').eq('id', userId).maybeSingle(),
+        client.from('employee_profiles').select('id,display_name,department,job_title,role,is_active').eq('id', userId).maybeSingle(),
         client.from('employee_profiles').select('id,display_name,department,job_title,is_active').order('display_name'),
         client.from('exchange_requests').select('id,employee_id,request_type,from_unit,to_unit,note,status,created_at').order('created_at', { ascending: false }),
       ])
@@ -324,6 +324,7 @@ function App() {
       </aside>
       <main className="main-content">
         <div className="welcome-row"><div><div className="eyebrow">بیمارستان مدنی · سامانه کارکنان</div><h1>{page === 'خانه' ? 'به شهروند مدنی خوش آمدید' : page}</h1><p>{page === 'خانه' ? 'ارتباط، همکاری و همراهی همکاران در یک فضای مشترک.' : 'ابزارهای ارتباط و همکاری کارکنان بیمارستان مدنی.'}</p></div><div className="date-chip"><CalendarDays size={17} /> فضای همکاری کارکنان</div></div>
+        {profile?.is_active === false && <div className="notice account-disabled-notice" role="alert"><div className="notice-icon"><ShieldCheck size={20} /></div><div><strong>حساب کاربری غیرفعال است</strong><p>دسترسی شما به اطلاعات و امکانات عملیاتی سامانه محدود شده است. برای پیگیری، با مدیر سامانه یا واحد فناوری اطلاعات بیمارستان تماس بگیرید.</p></div><button className="small-outline" onClick={logout}>خروج</button></div>}
         {message && <div className="notice"><div className="notice-icon"><ShieldCheck size={20} /></div><div><strong>پیام سامانه</strong><p>{message}</p></div><button className="small-outline" onClick={() => setMessage('')}>بستن</button></div>}
         {error && <div className="notice" role="alert"><div className="notice-icon"><Bell size={20} /></div><div><strong>توجه</strong><p>{error}</p></div><button className="small-outline" onClick={() => setError('')}>بستن</button></div>}
         {!configured && <div className="notice"><div className="notice-icon"><Activity size={20} /></div><div><strong>اتصال پایگاه داده تنظیم نشده است</strong><p>برای فعال‌سازی ورود و ذخیره اطلاعات، متغیرهای Supabase را در تنظیمات محیط اجرا وارد کنید.</p></div></div>}
