@@ -668,3 +668,20 @@ body{background:radial-gradient(ellipse at 12% 0%,#e4f2f1 0,transparent 34%),lin
 .profile-detail-item .account-active{color:#23866b}
 .profile-detail-item .account-inactive{color:#c04d54}
 @media(max-width:480px){.profile-details-grid{grid-template-columns:1fr}}
+
+
+.personal-settings-panel{margin-top:14px}
+.personal-settings-panel>.panel-title{margin-bottom:18px}
+.preference-group{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 2px;border-top:1px solid #e8eeee}
+.preference-group>div{display:grid;gap:5px}
+.preference-group strong{font-size:13px;color:#294f56}
+.preference-group span{font-size:11px;line-height:1.8;color:#789095}
+.preference-group select{min-width:155px;max-width:45%;padding:10px 12px;border:1px solid #d9e6e4;border-radius:12px;background:#f8fbfa;color:#315c64;font:inherit;font-size:12px;outline:none}
+.preference-group select:focus{border-color:#329b8c;box-shadow:0 0 0 3px #329b8c20}
+.settings-switch{display:flex;align-items:center;gap:9px;color:#278675;font-size:12px;font-weight:800;cursor:pointer}
+.settings-switch input{width:18px;height:18px;accent-color:#238b7c}
+.settings-saved-note{display:flex;align-items:center;gap:8px;margin-top:12px;padding:12px;border-radius:12px;background:#eef8f5;color:#32806e;font-size:11px;font-weight:700}
+.compact-mode .panel{padding-top:15px;padding-bottom:15px}
+.compact-mode .panel+.panel{margin-top:10px}
+.compact-mode .nav-item{padding-top:9px;padding-bottom:9px}
+@media(max-width:560px){.preference-group{align-items:stretch;flex-direction:column}.preference-group select{max-width:none;width:100%}.preference-toggle{flex-direction:row;align-items:center}}
