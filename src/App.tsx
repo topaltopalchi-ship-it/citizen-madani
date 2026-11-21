@@ -51,7 +51,7 @@ function App() {
   const threadLoadSequence = useRef(0)
   const [messageDraft, setMessageDraft] = useState('')
   const [messageAttachment, setMessageAttachment] = useState<File | null>(null)
-  const [attachmentPreview, setAttachmentPreview] = useState<{ url: string; name: string; kind: 'image' | 'pdf' | 'file'; mime?: string; size?: number; rows?: string[][]; sheetName?: string; truncated?: boolean; totalRows?: number } | null>(null)
+  const [attachmentPreview, setAttachmentPreview] = useState<{ url: string; name: string; kind: 'image' | 'pdf' | 'file'; mime?: string; size?: number; rows?: string[][]; sheetName?: string; truncated?: boolean; totalRows?: number; docText?: string; docTruncated?: boolean } | null>(null)
   const [unreadCount, setUnreadCount] = useState(0)
   const [auditEntries, setAuditEntries] = useState<AuditEntry[]>([])
   const [workShifts, setWorkShifts] = useState<WorkShift[]>([])
@@ -575,7 +575,7 @@ function App() {
     } else if (item.attachment_type === 'application/pdf') {
       setAttachmentPreview({ url: data.signedUrl, name: item.attachment_name || 'پیش‌نمایش PDF', kind: 'pdf' })
     } else if (item.attachment_type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') {
-      const preview = { url: data.signedUrl, name: item.attachment_name || 'فایل Excel', kind: 'file' as const, mime: item.attachment_type, size: item.attachment_size }
+      const preview = { url: data.signedUrl, name: item.attachment_name || 'فایل Excel', kind: 'file' as const, mime: item.attachment_type, size: item.attachment_size ?? undefined }
       setAttachmentPreview(preview)
       try {
         const response = await fetch(data.signedUrl)
@@ -591,7 +591,7 @@ function App() {
         setError('خواندن پیش‌نمایش Excel ممکن نشد؛ فایل همچنان از مسیر خصوصی قابل دریافت است.')
       }
     } else {
-      setAttachmentPreview({ url: data.signedUrl, name: item.attachment_name || 'فایل پیوست', kind: 'file', mime: item.attachment_type || undefined, size: item.attachment_size || undefined })
+      setAttachmentPreview({ url: data.signedUrl, name: item.attachment_name || 'فایل پیوست', kind: 'file', mime: item.attachment_type || undefined, size: item.attachment_size ?? undefined })
     }
   }
 
