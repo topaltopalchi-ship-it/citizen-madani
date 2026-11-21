@@ -67,7 +67,7 @@ create policy "Recipients mark messages read"
   with check (recipient_id = auth.uid() and public.is_citizen_madani_active_employee());
 
 -- Revoke broad defaults first, then grant only the operations the UI requires.
-revoke all privileges on table public.employee_profiles from anon, authenticated;
+revoke all privileges on table public.employee_profiles from public, anon, authenticated;
 grant select on public.employee_profiles to authenticated;
 grant update (display_name, department, job_title, employee_code, is_active)
   on public.employee_profiles to authenticated;
