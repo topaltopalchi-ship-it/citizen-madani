@@ -69,7 +69,18 @@ function App() {
   }, [messageAttachmentPreviews])
   const [attachmentPreview, setAttachmentPreview] = useState<{ url: string; name: string; kind: 'image' | 'pdf' | 'file'; mime?: string; size?: number; rows?: string[][]; sheetName?: string; truncated?: boolean; totalRows?: number; docText?: string; docTruncated?: boolean; gallery?: { url: string; name: string; path: string }[]; galleryIndex?: number } | null>(null)
   const [unreadCount, setUnreadCount] = useState(0)
-  const [notifications, setNotifications] = useState<EmployeeNotification[]>([])\n  const [staffReports, setStaffReports] = useState<any[]>([])\n  const [reportType, setReportType] = useState<'error' | 'experience'>('error')\n  const [reportTitle, setReportTitle] = useState('')\n  const [reportBody, setReportBody] = useState('')\n  const [reportAudio, setReportAudio] = useState<Blob | null>(null)\n  const [reportAudioUrl, setReportAudioUrl] = useState('')\n  const [recording, setRecording] = useState(false)\n  const [reportAudioLinks, setReportAudioLinks] = useState<Record<string, string>>({})\n  const [reportResponseDrafts, setReportResponseDrafts] = useState<Record<string, string>>({})\n  const recorderRef = useRef<MediaRecorder | null>(null)\n  const audioChunksRef = useRef<Blob[]>([])
+  const [notifications, setNotifications] = useState<EmployeeNotification[]>([])
+  const [staffReports, setStaffReports] = useState<any[]>([])
+  const [reportType, setReportType] = useState<'error' | 'experience'>('error')
+  const [reportTitle, setReportTitle] = useState('')
+  const [reportBody, setReportBody] = useState('')
+  const [reportAudio, setReportAudio] = useState<Blob | null>(null)
+  const [reportAudioUrl, setReportAudioUrl] = useState('')
+  const [recording, setRecording] = useState(false)
+  const [reportAudioLinks, setReportAudioLinks] = useState<Record<string, string>>({})
+  const [reportResponseDrafts, setReportResponseDrafts] = useState<Record<string, string>>({})
+  const recorderRef = useRef<MediaRecorder | null>(null)
+  const audioChunksRef = useRef<Blob[]>([])
   const [notificationReadFilter, setNotificationReadFilter] = useState<'all' | 'unread' | 'read'>('all')
   const [notificationTypeFilter, setNotificationTypeFilter] = useState<'all' | EmployeeNotification['notification_type']>('all')
   const [auditEntries, setAuditEntries] = useState<AuditEntry[]>([])
@@ -452,7 +463,10 @@ function App() {
           setInboxMessages(loadedInbox)
         }
       }
-      const { data: reportData, error: reportError } = await client.from('staff_reports').select('id,reporter_id,report_type,title,body,department,occurred_at,audio_path,status,admin_response,created_at').order('created_at', { ascending: false }).limit(200)\n      if (active && reportError) setError('بارگذاری گزارش‌ها انجام نشد؛ Migration ثبت خطا و تجربه را بررسی کنید.')\n      if (active && reportData) setStaffReports(reportData)\n      const { data: notificationData, error: notificationError } = await client.from('employee_notifications').select('id,recipient_id,notification_type,title,body,target_page,source_key,created_at,read_at').order('created_at', { ascending: false }).limit(100)
+      const { data: reportData, error: reportError } = await client.from('staff_reports').select('id,reporter_id,report_type,title,body,department,occurred_at,audio_path,status,admin_response,created_at').order('created_at', { ascending: false }).limit(200)
+      if (active && reportError) setError('بارگذاری گزارش‌ها انجام نشد؛ Migration ثبت خطا و تجربه را بررسی کنید.')
+      if (active && reportData) setStaffReports(reportData)
+      const { data: notificationData, error: notificationError } = await client.from('employee_notifications').select('id,recipient_id,notification_type,title,body,target_page,source_key,created_at,read_at').order('created_at', { ascending: false }).limit(100)
       if (active && notificationError) setError('بارگذاری اعلان‌ها انجام نشد؛ Migration مرکز اعلان‌ها را بررسی کنید.')
       if (active && notificationData) setNotifications(notificationData as EmployeeNotification[])
       const ids = [...new Set((requestResult.data ?? []).map((r: any) => r.employee_id))]
@@ -998,7 +1012,8 @@ function App() {
     else setStaffReports(current => current.map(item => item.id === id ? { ...item, admin_response: response, reviewed_by: profile.id, reviewed_at: new Date().toISOString(), status: 'reviewing' } : item))
     setBusy(false)
   }
-\n  const reviewStaffReport = async (id: string, status: 'reviewing' | 'resolved' | 'closed') => {
+
+  const reviewStaffReport = async (id: string, status: 'reviewing' | 'resolved' | 'closed') => {
     if (!supabase || !profile || !isAdmin || busy) return
     setBusy(true)
     const { error: updateError } = await supabase.from('staff_reports').update({
@@ -1008,7 +1023,8 @@ function App() {
     else setStaffReports(current => current.map(item => item.id === id ? { ...item, status, reviewed_by: profile.id, reviewed_at: new Date().toISOString() } : item))
     setBusy(false)
   }
-\n  const go = (next: Page) => { setPage(next); setMobileNav(false); setError(''); if (next === 'مرکز اعلان‌ها') setNotificationReadFilter(defaultNotificationFilter) }
+
+  const go = (next: Page) => { setPage(next); setMobileNav(false); setError(''); if (next === 'مرکز اعلان‌ها') setNotificationReadFilter(defaultNotificationFilter) }
 
   return <div className={compactMode ? 'app-shell compact-mode' : 'app-shell'}>
     <header className="topbar">
