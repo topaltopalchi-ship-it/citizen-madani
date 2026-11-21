@@ -13,6 +13,7 @@ type DirectMessage = { id: string; sender_id: string; recipient_id: string; body
 type AuditEntry = { id: number; actor_id: string | null; target_id: string | null; entity_type: string; action: string; details: Record<string, unknown>; created_at: string }
 type WorkShift = { id: string; employee_id: string; shift_date: string; shift_type: 'morning' | 'evening' | 'night'; starts_at: string; ends_at: string; department: string; notes: string | null; created_at: string }
 type ShiftChangeRequest = { id: string; requester_id: string; from_shift_id: string; to_shift_id: string; note: string | null; status: string; reviewed_by: string | null; reviewed_at: string | null; created_at: string }
+type EmployeeNotification = { id: string; recipient_id: string; notification_type: 'direct_message' | 'exchange_request' | 'shift_swap' | 'announcement'; title: string; body: string; target_page: 'پیام‌ها' | 'درخواست‌های من' | 'برنامه شیفت‌ها' | 'اطلاعیه‌ها'; source_key: string; created_at: string; read_at: string | null }
 
 const units = ['اورژانس', 'داخلی', 'جراحی', 'ICU', 'آزمایشگاه', 'رادیولوژی', 'داروخانه', 'پذیرش', 'سایر']
 
@@ -63,6 +64,7 @@ function App() {
   }, [messageAttachmentPreviews])
   const [attachmentPreview, setAttachmentPreview] = useState<{ url: string; name: string; kind: 'image' | 'pdf' | 'file'; mime?: string; size?: number; rows?: string[][]; sheetName?: string; truncated?: boolean; totalRows?: number; docText?: string; docTruncated?: boolean; gallery?: { url: string; name: string; path: string }[]; galleryIndex?: number } | null>(null)
   const [unreadCount, setUnreadCount] = useState(0)
+  const [notifications, setNotifications] = useState<EmployeeNotification[]>([])
   const [auditEntries, setAuditEntries] = useState<AuditEntry[]>([])
   const [workShifts, setWorkShifts] = useState<WorkShift[]>([])
   const [shiftChangeRequests, setShiftChangeRequests] = useState<ShiftChangeRequest[]>([])
@@ -183,23 +185,8 @@ function App() {
   const pendingMyRequests = myRequests.filter(request => request.status === 'pending').length
   const approvedMyRequests = myRequests.filter(request => request.status === 'approved').length
   const publishedAnnouncementCount = announcements.filter(item => item.is_published).length
-  const activityNotifications = useMemo(() => {
-    const items: { id: string; title: string; detail: string; date: string; kind: 'message' | 'request' | 'shift' | 'announcement'; target: Page; priority?: boolean }[] = []
-    if (unreadCount > 0) items.push({ id: 'unread-messages', title: 'پیام‌های خوانده‌نشده', detail: `${unreadCount} پیام جدید در صندوق پیام‌های شما وجود دارد.`, date: new Date().toISOString(), kind: 'message', target: 'پیام‌ها' })
-    myRequests.filter(item => item.status !== 'pending').forEach(item => items.push({
-      id: `request-${item.id}`, title: item.status === 'approved' ? 'درخواست شما تأیید شد' : 'وضعیت درخواست شما تغییر کرد',
-      detail: `${item.request_type} · ${item.from_unit} ← ${item.to_unit}`, date: item.created_at, kind: 'request', target: 'درخواست‌های من'
-    }))
-    shiftChangeRequests.filter(item => item.requester_id === profile?.id && item.status !== 'pending').forEach(item => items.push({
-      id: `shift-${item.id}`, title: item.status === 'approved' ? 'درخواست جابه‌جایی شیفت تأیید شد' : 'درخواست جابه‌جایی شیفت رد شد',
-      detail: item.note || 'وضعیت درخواست جابه‌جایی شیفت شما به‌روزرسانی شد.', date: item.reviewed_at || item.created_at, kind: 'shift', target: 'برنامه شیفت‌ها'
-    }))
-    announcements.filter(item => item.is_published).slice(0, 12).forEach(item => items.push({
-      id: `announcement-${item.id}`, title: item.title, detail: item.body, date: item.published_at || item.created_at,
-      kind: 'announcement', target: 'اطلاعیه‌ها', priority: item.priority === 'important'
-    }))
-    return items.sort((left, right) => right.date.localeCompare(left.date)).slice(0, 30)
-  }, [unreadCount, myRequests, shiftChangeRequests, profile?.id, announcements])
+  const activityNotifications = notifications
+  const unreadNotificationCount = notifications.filter(item => !item.read_at).length
   const todayKey = dateKey(new Date())
   const myUpcomingShifts = useMemo(() => workShifts
     .filter(shift => shift.employee_id === profile?.id && shift.shift_date >= todayKey)
@@ -280,7 +267,7 @@ function App() {
     })
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       setUserEmail(session?.user.email ?? null)
-      if (!session) { setProfile(null); setRequests([]); setSelectedContact(null); setThreadMessages([]); setInboxMessages([]); seenIncomingMessageIds.current.clear(); setMessageDraft(''); setUnreadCount(0); threadLoadSequence.current += 1; setThreadLoading(false) }
+      if (!session) { setProfile(null); setRequests([]); setSelectedContact(null); setThreadMessages([]); setInboxMessages([]); setNotifications([]); seenIncomingMessageIds.current.clear(); setMessageDraft(''); setUnreadCount(0); threadLoadSequence.current += 1; setThreadLoading(false) }
     })
     return () => listener.subscription.unsubscribe()
   }, [])
@@ -333,6 +320,9 @@ function App() {
           setInboxMessages(loadedInbox)
         }
       }
+      const { data: notificationData, error: notificationError } = await client.from('employee_notifications').select('id,recipient_id,notification_type,title,body,target_page,source_key,created_at,read_at').order('created_at', { ascending: false }).limit(100)
+      if (active && notificationError) setError('بارگذاری اعلان‌ها انجام نشد؛ Migration مرکز اعلان‌ها را بررسی کنید.')
+      if (active && notificationData) setNotifications(notificationData as EmployeeNotification[])
       const ids = [...new Set((requestResult.data ?? []).map((r: any) => r.employee_id))]
       if (ids.length) {
         const { data: names } = await client.from('employee_profiles').select('id,display_name').in('id', ids)
@@ -397,6 +387,48 @@ function App() {
       .subscribe()
     return () => { void client.removeChannel(channel) }
   }, [profile?.id, selectedContact?.id])
+
+  useEffect(() => {
+    if (!supabase || !profile?.id) return
+    const client = supabase
+    const channel = client.channel(`employee-notifications-${profile.id}`)
+      .on('postgres_changes', {
+        event: 'INSERT', schema: 'public', table: 'employee_notifications',
+        filter: `recipient_id=eq.${profile.id}`,
+      }, payload => {
+        const incoming = payload.new as EmployeeNotification
+        setNotifications(current => current.some(item => item.id === incoming.id) ? current : [incoming, ...current].slice(0, 100))
+      })
+      .on('postgres_changes', {
+        event: 'UPDATE', schema: 'public', table: 'employee_notifications',
+        filter: `recipient_id=eq.${profile.id}`,
+      }, payload => {
+        const updated = payload.new as EmployeeNotification
+        setNotifications(current => current.map(item => item.id === updated.id ? { ...item, read_at: updated.read_at } : item))
+      })
+      .subscribe()
+    return () => { void client.removeChannel(channel) }
+  }, [profile?.id])
+
+  const markNotificationRead = async (item: EmployeeNotification) => {
+    if (!supabase || !profile || item.read_at) return
+    const readAt = new Date().toISOString()
+    const { error: updateError } = await supabase.from('employee_notifications')
+      .update({ read_at: readAt }).eq('id', item.id).eq('recipient_id', profile.id)
+    if (updateError) { setError('ثبت وضعیت خوانده‌شدن اعلان انجام نشد.'); return }
+    setNotifications(current => current.map(notification => notification.id === item.id ? { ...notification, read_at: readAt } : notification))
+  }
+
+  const markAllNotificationsRead = async () => {
+    if (!supabase || !profile) return
+    const unreadIds = notifications.filter(item => !item.read_at).map(item => item.id)
+    if (!unreadIds.length) return
+    const readAt = new Date().toISOString()
+    const { error: updateError } = await supabase.from('employee_notifications')
+      .update({ read_at: readAt }).in('id', unreadIds).eq('recipient_id', profile.id)
+    if (updateError) { setError('علامت‌گذاری همه اعلان‌ها انجام نشد.'); return }
+    setNotifications(current => current.map(item => unreadIds.includes(item.id) ? { ...item, read_at: readAt } : item))
+  }
 
   const login = async (e: FormEvent) => {
     e.preventDefault()
@@ -760,9 +792,9 @@ function App() {
         {error && <div className="notice" role="alert"><div className="notice-icon"><Bell size={20} /></div><div><strong>توجه</strong><p>{error}</p></div><button className="small-outline" onClick={() => setError('')}>بستن</button></div>}
         {!configured && <div className="notice"><div className="notice-icon"><Activity size={20} /></div><div><strong>اتصال پایگاه داده تنظیم نشده است</strong><p>برای فعال‌سازی ورود و ذخیره اطلاعات، متغیرهای Supabase را در تنظیمات محیط اجرا وارد کنید.</p></div></div>}
         {page === 'مرکز اعلان‌ها' && <section className="panel notification-center">
-          <div className="panel-title"><div><h2>مرکز اعلان‌ها</h2><p>پیام‌ها، وضعیت درخواست‌ها و اطلاعیه‌های مهم در یک نگاه</p></div><span className="count-pill">{activityNotifications.length} رویداد</span></div>
-          {!userEmail ? <LoginPrompt onLogin={() => setShowLogin(true)} /> : activityNotifications.length === 0 ? <div className="empty-state"><Bell size={36}/><strong>اعلان تازه‌ای ندارید</strong><span>با دریافت پیام یا انتشار اطلاعیه، موارد جدید اینجا نمایش داده می‌شوند.</span></div> : <div className="notification-list">{activityNotifications.map(item => <article className="notification-card" key={item.id}>
-            <div className={'notification-icon '+item.kind}><Bell size={17}/></div><div className="notification-copy"><div className="notification-title-row"><strong>{item.title}</strong>{item.priority && <span className="announcement-priority important">مهم</span>}</div><p>{item.detail}</p><small>{new Date(item.date).toLocaleString('fa-IR')}</small></div><button className="small-outline" onClick={() => go(item.target)}>مشاهده</button>
+          <div className="panel-title"><div><h2>مرکز اعلان‌ها</h2><p>اعلان‌های ذخیره‌شده و همگام‌شده با حساب کاربری شما</p></div><div className="notification-panel-actions"><span className="count-pill">{unreadNotificationCount} خوانده‌نشده</span>{unreadNotificationCount > 0 && <button className="small-outline" onClick={markAllNotificationsRead}>خواندن همه</button>}</div></div>
+          {!userEmail ? <LoginPrompt onLogin={() => setShowLogin(true)} /> : activityNotifications.length === 0 ? <div className="empty-state"><Bell size={36}/><strong>اعلان تازه‌ای ندارید</strong><span>با دریافت پیام، بررسی درخواست یا انتشار اطلاعیه، اعلان در این بخش ذخیره می‌شود.</span></div> : <div className="notification-list">{activityNotifications.map(item => <article className={item.read_at ? 'notification-card is-read' : 'notification-card is-unread'} key={item.id}>
+            <div className={'notification-icon '+item.notification_type}><Bell size={17}/></div><div className="notification-copy"><div className="notification-title-row"><strong>{item.title}</strong>{!item.read_at && <span className="notification-unread-dot">جدید</span>}</div><p>{item.body}</p><small>{new Date(item.created_at).toLocaleString('fa-IR')}</small></div><button className="small-outline" onClick={async () => { await markNotificationRead(item); go(item.target_page) }}>مشاهده</button>
           </article>)}</div>}
         </section>}
         {page === 'خانه' && <>
