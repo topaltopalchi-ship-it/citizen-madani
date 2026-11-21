@@ -11,7 +11,7 @@ test('Supabase migrations have unique, chronological version prefixes', async ()
   assert.deepEqual(files, sorted, 'migration filenames must already be chronological');
   const versions = files.map((name) => name.split('_')[0]);
   assert.equal(new Set(versions).size, versions.length, 'migration versions must be unique');
-  assert.equal(files.length, 16, 'README setup checklist currently expects sixteen migrations');
+  assert.equal(files.length, 17, 'README setup checklist currently expects seventeen migrations');
 });
 
 test('attachment metadata validation is bound to the authenticated sender and recipient path', async () => {
@@ -58,4 +58,13 @@ test('inactive employees cannot read or delete private message attachments', asy
   assert.match(deletePolicy, /public\.is_citizen_madani_active_employee\(\)/i);
   assert.match(sql, /drop policy if exists "Message participants read attachments"/i);
   assert.match(sql, /drop policy if exists "Message sender deletes own orphan attachments"/i);
+});
+
+test('same-slot shift swaps defer uniqueness checks and lock rows deterministically', async () => {
+  const sql = await readMigration('20261121210000_safe_shift_swap_constraint.sql');
+  assert.match(sql, /alter constraint work_shift_employee_slot_unique\s+deferrable initially immediate/i);
+  assert.match(sql, /set constraints work_shift_employee_slot_unique deferred/i);
+  assert.match(sql, /where id in \(new\.from_shift_id, new\.to_shift_id\)\s+order by id\s+for update/i);
+  assert.match(sql, /set employee_id = case[\s\S]*?where id in \(new\.from_shift_id, new\.to_shift_id\)/i);
+  assert.match(sql, /public\.is_citizen_madani_admin\(\)/i);
 });
