@@ -11,7 +11,7 @@ test('Supabase migrations have unique, chronological version prefixes', async ()
   assert.deepEqual(files, sorted, 'migration filenames must already be chronological');
   const versions = files.map((name) => name.split('_')[0]);
   assert.equal(new Set(versions).size, versions.length, 'migration versions must be unique');
-  assert.equal(files.length, 20, 'README setup checklist must match the migration count');
+  assert.equal(files.length, 21, 'README setup checklist must match the migration count');
 });
 
 test('attachment metadata validation is bound to the authenticated sender and recipient path', async () => {
@@ -335,4 +335,19 @@ test('salary, karaneh, and overtime updates are published only by administrators
   assert.match(migration, /Admins manage welfare partners/);
   assert.match(migration, /created_by = auth\\.uid\\(\\)/);
   assert.match(migration, /alter table public\\.welfare_partners enable row level security/);
+});
+
+\ntest('staff error and experience reports are private and optional audio is stored in a restricted bucket', async () => {
+  const migration = await readMigration('20261122010000_staff_reports_and_audio.sql');
+  assert.match(migration, /create table if not exists public\\.staff_reports/);
+  assert.match(migration, /'error', 'experience'/);
+  assert.match(migration, /reporter_id = auth\\.uid\\(\\)/);
+  assert.match(migration, /reporter_id = auth\\.uid\\(\\) or public\\.is_citizen_madani_admin\\(\\)/);
+  assert.match(migration, /Admins review staff reports/);
+  assert.match(migration, /create policy "Employees upload own report audio"/);
+  assert.match(migration, /bucket_id = 'staff-report-audio'/);
+  assert.match(migration, /public = false/);
+  assert.match(migration, /file_size_limit = 10485760/);
+  assert.match(migration, /Report owners and admins read report audio/);
+  assert.match(migration, /not exists \(select 1 from public\\.staff_reports r where r\\.audio_path = storage\\.objects\\.name\)/);
 });
