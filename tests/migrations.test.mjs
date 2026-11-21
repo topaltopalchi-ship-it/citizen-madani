@@ -211,3 +211,16 @@ test('admin home dashboard derives operational metrics from loaded records and l
   assert.match(css, /\.admin-department-track/);
   assert.match(css, /@media\(max-width:520px\)\{\.admin-dashboard/);
 });
+
+
+test('admin dashboard displays a live shift-type breakdown for the selected month', async () => {
+  const app = await readFile(new URL('../src/App.tsx', import.meta.url), 'utf8');
+  const css = await readFile(new URL('../src/styles.css', import.meta.url), 'utf8');
+  assert.match(app, /const adminShiftTypeStats = useMemo/);
+  assert.match(app, /shift\.shift_type === 'morning'/);
+  assert.match(app, /shift\.shift_type === 'evening'/);
+  assert.match(app, /shift\.shift_type === 'night'/);
+  assert.match(app, /className="admin-shift-types-card"/);
+  assert.match(css, /\.admin-shift-type-track i\.evening/);
+  assert.match(css, /\.admin-shift-type-track i\.night/);
+});
