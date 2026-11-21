@@ -190,6 +190,8 @@ function App() {
       item.deleted_at ? 'پیام حذف شده است' : item.body,
       item.attachment_name,
       item.attachment_type,
+      ...(item.attachments ?? []).map(file => file.name),
+      ...(item.attachments ?? []).map(file => file.type),
     ].filter(Boolean).join(' ').toLocaleLowerCase('fa').includes(query))
   }, [threadMessages, threadQuery])
 
