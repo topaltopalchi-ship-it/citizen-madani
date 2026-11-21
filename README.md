@@ -5,7 +5,7 @@
 ## امکانات پیاده‌سازی‌شده
 - ورود کارکنان با ایمیل و رمز عبور از طریق Supabase Auth
 - نمایش فهرست کارکنان فعال پس از ورود
-- ثبت درخواست تبادل بخش یا بیمارستان
+- ثبت درخواست تبادل بخش یا بیمارستان، پیگیری وضعیت، پاسخ مدیر، ثبت هویت بررسی‌کننده و زمان رسیدگی
 - مشاهده درخواست‌های ثبت‌شده و وضعیت آن‌ها
 - اطلاعیه‌های بیمارستان با امکان ذخیره پیش‌نویس و انتشار توسط مدیران
 - پیام‌رسان خصوصی دونفره کارکنان با وضعیت خوانده‌شدن پیام‌ها
@@ -14,6 +14,7 @@
 - برنامه شیفت کارکنان با ثبت شیفت صبح/عصر/شب، تخصیص توسط مدیر و درخواست جابه‌جایی دو شیفت با تأیید مدیر؛ تأیید درخواست، تخصیص کارکنان دو شیفت را در یک تراکنش جابه‌جا می‌کند؛ حتی برای دو شیفت هم‌نوع و هم‌تاریخ، با قفل‌گذاری مرتب و کنترل یکتاییِ به‌تعویق‌افتاده
 - تقویم ماهانه شیفت‌ها با حرکت بین ماه‌ها، نمایش تعداد و نوع شیفت هر روز و خروجی CSV سازگار با Excel با پشتیبانی از متن فارسی
 - گزارش تحلیلی شیفت‌ها شامل فیلتر بخش/نوع/کارمند، روند شش‌ماهه، مقایسه ماه جاری با ماه قبل، توزیع بار کاری کارکنان و خروجی CSV و Excel
+- گزارش مدیریتی درخواست‌های تبادل شامل تعداد کل، درخواست‌های در انتظار، تأیید و ردشده، میانگین زمان رسیدگی و تفکیک نوع درخواست
 - پیام‌رسان با پیوست خصوصی حداکثر پنج فایل و مجموع حجم ۱۰ مگابایت برای هر پیام
 - بازارچه و آگهی‌های کارکنان شامل فروش کالای دست‌دوم، معرفی خدمات، محصولات و درخواست جابه‌جایی بخش؛ آگهی‌ها ابتدا در صف بررسی قرار می‌گیرند و فقط پس از تأیید مدیر برای کارکنان نمایش داده می‌شوند.
 - پنل مدیریت آگهی‌ها برای تأیید، رد و بستن آگهی؛ کارکنان نیز می‌توانند آگهی خود را ببندند و آگهی‌های منقضی‌شده از فهرست عمومی حذف می‌شوند.
@@ -26,7 +27,7 @@
 1. وابستگی‌ها را نصب کنید: `npm install`
 2. فایل `.env.example` را به `.env.local` کپی کنید.
 3. مقادیر `VITE_SUPABASE_URL` و `VITE_SUPABASE_PUBLISHABLE_KEY` را از پروژه Supabase خود وارد کنید.
-4. همه Migrationها را دقیقاً به‌ترتیب زمانی اجرا کنید: `202611200001_initial_schema.sql`، `20261121000000_employee_portal.sql`، `20261121010000_manager_review.sql`، `20261121020000_announcements.sql`، `20261121030000_direct_messages.sql`، `20261121100000_employee_management.sql`، `20261121110000_harden_table_grants.sql`، `20261121120000_active_account_access.sql`، `20261121130000_admin_audit_log.sql`، `20261121140000_work_shifts_and_swaps.sql`، `20261121150000_private_message_attachments.sql`، `20261121160000_sender_message_deletion.sql`، `20261121173000_multi_message_attachments.sql`، `20261121180000_multi_attachment_storage_rls.sql` و `20261121190000_shift_swap_audit.sql` و `20261121200000_active_employee_storage_access.sql` و `20261121210000_safe_shift_swap_constraint.sql` و `20261121220000_employee_notifications.sql` و `20261121230000_staff_community_and_compensation.sql` و `20261122000000_staff_welfare_partners.sql` و `20261122010000_staff_reports_and_audio.sql`.
+4. همه Migrationها را دقیقاً به‌ترتیب زمانی اجرا کنید: `202611200001_initial_schema.sql`، `20261121000000_employee_portal.sql`، `20261121010000_manager_review.sql`، `20261121020000_announcements.sql`، `20261121030000_direct_messages.sql`، `20261121100000_employee_management.sql`، `20261121110000_harden_table_grants.sql`، `20261121120000_active_account_access.sql`، `20261121130000_admin_audit_log.sql`، `20261121140000_work_shifts_and_swaps.sql`، `20261121150000_private_message_attachments.sql`، `20261121160000_sender_message_deletion.sql`، `20261121173000_multi_message_attachments.sql`، `20261121180000_multi_attachment_storage_rls.sql` و `20261121190000_shift_swap_audit.sql` و `20261121200000_active_employee_storage_access.sql` و `20261121210000_safe_shift_swap_constraint.sql` و `20261121220000_employee_notifications.sql` و `20261121230000_staff_community_and_compensation.sql` و `20261122000000_staff_welfare_partners.sql` و `20261122010000_staff_reports_and_audio.sql` و `20261122020000_exchange_request_review_tracking.sql`.
 5. برنامه را اجرا کنید: `npm run dev`
 
 ## ایجاد حساب کارکنان
