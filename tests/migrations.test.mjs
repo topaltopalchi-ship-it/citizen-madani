@@ -351,3 +351,18 @@ test('salary, karaneh, and overtime updates are published only by administrators
   assert.match(migration, /Report owners and admins read report audio/);
   assert.match(migration, /not exists \(select 1 from public\\.staff_reports r where r\\.audio_path = storage\\.objects\\.name\)/);
 });
+
+\ntest('staff report page supports private text and audio submissions with admin review', async () => {
+  const app = await readFile(new URL('../src/App.tsx', import.meta.url), 'utf8');
+  const css = await readFile(new URL('../src/styles.css', import.meta.url), 'utf8');
+  assert.match(app, /page === 'ثبت خطا و تجربه'/);
+  assert.match(app, /getUserMedia\(\{ audio: true \}\)/);
+  assert.match(app, /new MediaRecorder/);
+  assert.match(app, /staff-report-audio/);
+  assert.match(app, /from\('staff_reports'\)\.insert/);
+  assert.match(app, /playStaffReportAudio/);
+  assert.match(app, /reviewStaffReport/);
+  assert.match(app, /گزارش فقط برای شما و مدیران مجاز قابل مشاهده است/);
+  assert.match(css, /\.staff-report-form/);
+  assert.match(css, /\.report-audio-preview/);
+});
