@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(6);
+select plan(9);
 
 -- Exercise the real auth.users trigger, manager authorization, request trigger,
 -- deferred unique constraint, and two-row atomic assignment swap.
@@ -93,6 +93,47 @@ select is(
    where id = '00000000-0000-0000-0000-000000000021'),
   '00000000-0000-0000-0000-000000000001',
   'review actor is recorded from the authenticated manager'
+);
+
+select is(
+  (select count(*)::int
+   from public.employee_notifications
+   where recipient_id = '00000000-0000-0000-0000-000000000002'
+     and notification_type = 'shift_swap'
+     and source_key = 'shift_swap:00000000-0000-0000-0000-000000000021:approved'),
+  1,
+  'approving a shift swap creates one durable notification for the requester'
+);
+
+insert into public.direct_messages (id, sender_id, recipient_id, body)
+values (
+  '00000000-0000-0000-0000-000000000031',
+  '00000000-0000-0000-0000-000000000003',
+  '00000000-0000-0000-0000-000000000002',
+  'پیام آزمایشی اعلان'
+);
+
+select is(
+  (select count(*)::int
+   from public.employee_notifications
+   where recipient_id = '00000000-0000-0000-0000-000000000002'
+     and notification_type = 'direct_message'
+     and source_key = 'direct_message:00000000-0000-0000-0000-000000000031'),
+  1,
+  'inserting a private message creates one durable notification for its recipient'
+);
+
+update public.shift_change_requests
+  set note = 'same approved state'
+  where id = '00000000-0000-0000-0000-000000000021';
+
+select is(
+  (select count(*)::int
+   from public.employee_notifications
+   where recipient_id = '00000000-0000-0000-0000-000000000002'
+     and source_key = 'shift_swap:00000000-0000-0000-0000-000000000021:approved'),
+  1,
+  'replaying an unchanged shift decision does not duplicate its notification'
 );
 
 select * from finish();
