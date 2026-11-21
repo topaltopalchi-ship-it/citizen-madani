@@ -859,3 +859,19 @@ body{background:radial-gradient(ellipse at 12% 0%,#e4f2f1 0,transparent 34%),lin
 .community-card>small{display:block;color:#81949a;font-size:10px;line-height:1.9;overflow-wrap:anywhere}
 .community-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:7px;margin-top:12px;padding-top:10px;border-top:1px solid #edf1f2}
 @media(max-width:680px){.community-list{grid-template-columns:1fr}.community-form .field-grid{grid-template-columns:1fr}.community-filters{flex-direction:column}.community-filters select{width:100%}}
+
+
+/* Official compensation notices */
+.compensation-form{display:flex;flex-direction:column;gap:11px;padding:19px;margin-bottom:22px;border:1px solid #dce9eb;border-radius:16px;background:linear-gradient(145deg,#f4faf9,#f5f8fc);box-shadow:inset 0 1px 0 #fff}
+.compensation-form h3{margin:0 0 3px;color:#245466;font-size:14px}
+.compensation-form label{display:block;margin-bottom:7px;color:#56727c;font-size:11px}
+.compensation-form input,.compensation-form select,.compensation-form textarea{width:100%;min-width:0;padding:10px 11px;border:1px solid #dce8eb;border-radius:9px;background:#fff;color:#345967;font-size:11px;outline-color:#6aa7a5}
+.compensation-form textarea{resize:vertical;line-height:1.9}
+.compensation-form .field-grid{margin:0}
+.compensation-form .primary-btn{align-self:flex-start;box-shadow:0 6px 14px #126b7030}
+.compensation-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
+.compensation-card{min-width:0;padding:17px;border:1px solid #e2ecee;border-radius:15px;background:linear-gradient(145deg,#fff,#f9fcfc);box-shadow:0 7px 18px #204f5b0b,inset 0 1px 0 white}
+.compensation-card h3{margin:13px 0 8px;color:#1c4b5b;font-size:15px;overflow-wrap:anywhere}
+.compensation-card p{margin:0 0 11px;color:#637d85;font-size:11px;line-height:2;white-space:pre-wrap;overflow-wrap:anywhere}
+.compensation-card>small{display:block;color:#81949a;font-size:10px;line-height:1.9}
+@media(max-width:680px){.compensation-list{grid-template-columns:1fr}.compensation-form .field-grid{grid-template-columns:1fr}}
