@@ -53,7 +53,7 @@ function App() {
   const threadLoadSequence = useRef(0)
   const [messageDraft, setMessageDraft] = useState('')
   const [messageAttachments, setMessageAttachments] = useState<File[]>([])
-  const [attachmentPreview, setAttachmentPreview] = useState<{ url: string; name: string; kind: 'image' | 'pdf' | 'file'; mime?: string; size?: number; rows?: string[][]; sheetName?: string; truncated?: boolean; totalRows?: number; docText?: string; docTruncated?: boolean; gallery?: { url: string; name: string }[]; galleryIndex?: number } | null>(null)
+  const [attachmentPreview, setAttachmentPreview] = useState<{ url: string; name: string; kind: 'image' | 'pdf' | 'file'; mime?: string; size?: number; rows?: string[][]; sheetName?: string; truncated?: boolean; totalRows?: number; docText?: string; docTruncated?: boolean; gallery?: { url: string; name: string; path: string }[]; galleryIndex?: number } | null>(null)
   const [unreadCount, setUnreadCount] = useState(0)
   const [auditEntries, setAuditEntries] = useState<AuditEntry[]>([])
   const [workShifts, setWorkShifts] = useState<WorkShift[]>([])
@@ -595,10 +595,10 @@ function App() {
       const images = allFiles.filter(candidate => candidate.type.startsWith('image/'))
       const gallery = await Promise.all(images.map(async candidate => {
         const { data: imageLink } = await supabase!.storage.from('employee-message-attachments').createSignedUrl(candidate.path, 300)
-        return imageLink?.signedUrl ? { url: imageLink.signedUrl, name: candidate.name } : null
+        return imageLink?.signedUrl ? { url: imageLink.signedUrl, name: candidate.name, path: candidate.path } : null
       }))
-      const availableGallery = gallery.filter((entry): entry is { url: string; name: string } => Boolean(entry))
-      const galleryIndex = Math.max(0, availableGallery.findIndex(entry => entry.name === file.name))
+      const availableGallery = gallery.filter((entry): entry is { url: string; name: string; path: string } => Boolean(entry))
+      const galleryIndex = Math.max(0, availableGallery.findIndex(entry => entry.path === file.path))
       setAttachmentPreview({ url: data.signedUrl, name: file.name || 'پیش‌نمایش تصویر', kind: 'image', gallery: availableGallery, galleryIndex })
     } else if (file.type === 'application/pdf') {
       setAttachmentPreview({ url: data.signedUrl, name: file.name || 'پیش‌نمایش PDF', kind: 'pdf' })
