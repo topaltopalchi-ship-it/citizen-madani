@@ -47,6 +47,7 @@ function App() {
   const [workShifts, setWorkShifts] = useState<WorkShift[]>([])
   const [shiftChangeRequests, setShiftChangeRequests] = useState<ShiftChangeRequest[]>([])
   const [shiftDate, setShiftDate] = useState(new Date().toISOString().slice(0, 10))
+  const [calendarMonth, setCalendarMonth] = useState(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1))
   const [shiftType, setShiftType] = useState<'morning' | 'evening' | 'night'>('morning')
   const [shiftStartsAt, setShiftStartsAt] = useState('07:00')
   const [shiftEndsAt, setShiftEndsAt] = useState('15:00')
@@ -79,6 +80,35 @@ function App() {
     const matchesStatus = employeeStatusFilter === 'all' || (employeeStatusFilter === 'active' ? employee.is_active !== false : employee.is_active === false)
     return matchesQuery && matchesStatus
   }).sort((a, b) => (a.is_active === false ? 1 : 0) - (b.is_active === false ? 1 : 0) || a.display_name.localeCompare(b.display_name, 'fa')), [colleagues, employeeQuery, employeeStatusFilter])
+  const calendarCells = useMemo(() => {
+    const year = calendarMonth.getFullYear(), month = calendarMonth.getMonth()
+    const offset = (new Date(year, month, 1).getDay() + 1) % 7
+    const days = new Date(year, month + 1, 0).getDate()
+    const count = Math.ceil((offset + days) / 7) * 7
+    return Array.from({ length: count }, (_, index) => {
+      const day = index - offset + 1
+      if (day < 1 || day > days) return null
+      const key = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+      return { key, date: new Date(year, month, day, 12), shifts: workShifts.filter(shift => shift.shift_date === key) }
+    })
+  }, [calendarMonth, workShifts])
+  const calendarMonthShifts = useMemo(() => workShifts.filter(shift => {
+    const [year, month] = shift.shift_date.split('-').map(Number)
+    return year === calendarMonth.getFullYear() && month === calendarMonth.getMonth() + 1
+  }), [calendarMonth, workShifts])
+  const exportShiftCalendar = () => {
+    const rows = [['تاریخ', 'نام کارمند', 'بخش', 'نوع شیفت', 'ساعت شروع', 'ساعت پایان', 'توضیحات']]
+    calendarMonthShifts.forEach(shift => rows.push([
+      shift.shift_date, colleagues.find(person => person.id === shift.employee_id)?.display_name || 'کارمند',
+      shift.department, shiftTypeLabel(shift.shift_type), shift.starts_at.slice(0, 5), shift.ends_at.slice(0, 5), shift.notes || ''
+    ]))
+    const csv = '\uFEFF' + rows.map(row => row.map(value => '"' + String(value).replace(/"/g, '""') + '"').join(',')).join('\r\n')
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }))
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `shift-calendar-${calendarMonth.getFullYear()}-${String(calendarMonth.getMonth() + 1).padStart(2, '0')}.csv`
+    document.body.appendChild(link); link.click(); link.remove(); URL.revokeObjectURL(url)
+  }
   const activeEmployeeCount = colleagues.filter(employee => employee.is_active !== false).length
   const inactiveEmployeeCount = colleagues.length - activeEmployeeCount
   const filteredContacts = useMemo(() => colleagues.filter(c => c.id !== profile?.id &&
@@ -122,7 +152,7 @@ function App() {
       if (active && announcementError) setError(announcementError.message)
       if (active && announcementData) setAnnouncements(announcementData)
       const [shiftResult, shiftRequestResult] = await Promise.all([
-        client.from('work_shifts').select('id,employee_id,shift_date,shift_type,starts_at,ends_at,department,notes,created_at').gte('shift_date', new Date().toISOString().slice(0, 10)).order('shift_date').order('starts_at').limit(250),
+        client.from('work_shifts').select('id,employee_id,shift_date,shift_type,starts_at,ends_at,department,notes,created_at').gte('shift_date', new Date(new Date().getFullYear() - 1, new Date().getMonth(), 1).toISOString().slice(0, 10)).lte('shift_date', new Date(new Date().getFullYear() + 1, new Date().getMonth() + 1, 0).toISOString().slice(0, 10)).order('shift_date').order('starts_at').limit(1500),
         client.from('shift_change_requests').select('id,requester_id,from_shift_id,to_shift_id,note,status,reviewed_by,reviewed_at,created_at').order('created_at', { ascending: false }).limit(200),
       ])
       if (active && shiftResult.error) setError('بارگذاری برنامه شیفت‌ها انجام نشد؛ Migration مدیریت شیفت را اجرا کنید.')
@@ -253,7 +283,7 @@ function App() {
     if (updateError) setError('بررسی درخواست انجام نشد؛ ممکن است تخصیص شیفت تغییر کرده باشد.')
     else {
       setShiftChangeRequests(current => current.map(item => item.id === id ? { ...item, status, reviewed_at: new Date().toISOString() } : item))
-      const { data } = await supabase.from('work_shifts').select('id,employee_id,shift_date,shift_type,starts_at,ends_at,department,notes,created_at').gte('shift_date', new Date().toISOString().slice(0, 10)).order('shift_date').order('starts_at').limit(250)
+      const { data } = await supabase.from('work_shifts').select('id,employee_id,shift_date,shift_type,starts_at,ends_at,department,notes,created_at').gte('shift_date', new Date(new Date().getFullYear() - 1, new Date().getMonth(), 1).toISOString().slice(0, 10)).lte('shift_date', new Date(new Date().getFullYear() + 1, new Date().getMonth() + 1, 0).toISOString().slice(0, 10)).order('shift_date').order('starts_at').limit(1500)
       if (data) setWorkShifts(data as WorkShift[])
       setMessage(status === 'approved' ? 'جابه‌جایی تأیید و تخصیص دو شیفت به‌صورت خودکار عوض شد.' : 'درخواست جابه‌جایی رد شد.')
     }
@@ -446,6 +476,24 @@ function App() {
         {page === 'مدیریت درخواست‌ها' && <section className="panel"><div className="panel-title"><div><h2>مدیریت درخواست‌های تبادل</h2><p>بررسی و تعیین نتیجه درخواست‌های کارکنان</p></div><span className="count-pill">{requests.filter(r => r.status === 'pending').length} در انتظار</span></div>{!isAdmin ? <LoginPrompt onLogin={() => setShowLogin(true)} /> : requests.length === 0 ? <div className="empty-state"><ClipboardList size={36}/><strong>درخواستی برای بررسی وجود ندارد</strong></div> : <div className="request-list">{requests.map(r => <div className="request-row" key={r.id}><div className="request-symbol"><ArrowLeftRight/></div><div className="request-info"><strong>{r.request_type} · {employeeNames[r.employee_id || ''] || 'کارمند'}</strong><span>{r.from_unit} ← {r.to_unit}</span>{r.note && <small>{r.note}</small>}<small>{new Date(r.created_at).toLocaleDateString('fa-IR')}</small></div><span className={r.status === 'approved' ? 'status-approved' : r.status === 'rejected' ? 'status-rejected' : 'status-pending'}>{statusLabel(r.status)}</span>{r.status === 'pending' && <div className="review-actions"><button className="approve-btn" disabled={busy} onClick={() => reviewRequest(r.id, 'approved')}>تأیید</button><button className="reject-btn" disabled={busy} onClick={() => reviewRequest(r.id, 'rejected')}>رد</button></div>}</div>)}</div>}</section>}
         {page === 'برنامه شیفت‌ها' && <section className="panel shift-panel"><div className="panel-title"><div><h2>برنامه کاری و شیفت‌ها</h2><p>برنامه شیفت‌های آینده و درخواست جابه‌جایی با تأیید مدیر</p></div><span className="count-pill">{workShifts.length} شیفت</span></div>{!userEmail ? <LoginPrompt onLogin={() => setShowLogin(true)} /> : <>
           {isAdmin && <form className="shift-create-form" onSubmit={createWorkShift}><h3>ثبت شیفت جدید</h3><div className="field-grid"><div><label htmlFor="shift-employee">کارمند</label><select id="shift-employee" required value={shiftEmployeeId} onChange={e => setShiftEmployeeId(e.target.value)}><option value="">انتخاب کارمند</option>{colleagues.filter(person => person.is_active !== false).map(person => <option key={person.id} value={person.id}>{person.display_name} · {person.department || 'بدون بخش'}</option>)}</select></div><div><label htmlFor="shift-department">بخش</label><select id="shift-department" value={shiftDepartment} onChange={e => setShiftDepartment(e.target.value)}>{units.map(unit => <option key={unit}>{unit}</option>)}</select></div></div><div className="field-grid"><div><label htmlFor="shift-date">تاریخ</label><input id="shift-date" type="date" min={new Date().toISOString().slice(0, 10)} required value={shiftDate} onChange={e => setShiftDate(e.target.value)} /></div><div><label htmlFor="shift-type">نوع شیفت</label><select id="shift-type" value={shiftType} onChange={e => { const value=e.target.value as 'morning'|'evening'|'night'; setShiftType(value); setShiftStartsAt(value==='morning'?'07:00':value==='evening'?'15:00':'23:00'); setShiftEndsAt(value==='morning'?'15:00':value==='evening'?'23:00':'07:00') }}><option value="morning">صبح</option><option value="evening">عصر</option><option value="night">شب</option></select></div></div><div className="field-grid"><div><label htmlFor="shift-start">شروع</label><input id="shift-start" type="time" required value={shiftStartsAt} onChange={e => setShiftStartsAt(e.target.value)} /></div><div><label htmlFor="shift-end">پایان</label><input id="shift-end" type="time" required value={shiftEndsAt} onChange={e => setShiftEndsAt(e.target.value)} /></div></div><label htmlFor="shift-notes">توضیحات (اختیاری)</label><input id="shift-notes" maxLength={500} value={shiftNotes} onChange={e => setShiftNotes(e.target.value)} placeholder="توضیح کوتاه برای شیفت" /><button className="primary-btn" disabled={busy}>{busy ? 'در حال ثبت...' : 'ثبت در برنامه کاری'}</button></form>}
+           <section className="shift-calendar" aria-label="تقویم ماهانه شیفت‌ها">
+             <div className="shift-calendar-toolbar">
+               <div><h3>تقویم ماهانه</h3><span>{calendarMonthShifts.length} شیفت در این ماه</span></div>
+               <div className="shift-calendar-actions">
+                 <button type="button" className="small-outline" onClick={() => setCalendarMonth(current => new Date(current.getFullYear(), current.getMonth() - 1, 1))} aria-label="ماه قبل"><ChevronLeft size={16}/></button>
+                 <strong>{calendarMonth.toLocaleDateString('fa-IR', { month: 'long', year: 'numeric' })}</strong>
+                 <button type="button" className="small-outline calendar-next" onClick={() => setCalendarMonth(current => new Date(current.getFullYear(), current.getMonth() + 1, 1))} aria-label="ماه بعد"><ChevronLeft size={16}/></button>
+                 <button type="button" className="primary-btn calendar-export" onClick={exportShiftCalendar} disabled={calendarMonthShifts.length === 0}>خروجی Excel</button>
+               </div>
+             </div>
+             <div className="shift-calendar-grid shift-calendar-weekdays">{['شنبه','یکشنبه','دوشنبه','سه‌شنبه','چهارشنبه','پنجشنبه','جمعه'].map(day => <div key={day}>{day}</div>)}</div>
+             <div className="shift-calendar-grid shift-calendar-days">{calendarCells.map((cell, index) => cell ? <div className={'shift-calendar-day' + (cell.key === new Date().toLocaleDateString('en-CA') ? ' today' : '')} key={cell.key}>
+               <strong>{cell.date.toLocaleDateString('fa-IR', { day: 'numeric' })}</strong>
+               {cell.shifts.slice(0, 3).map(shift => <span className={'calendar-shift '+shift.shift_type} key={shift.id} title={colleagues.find(person => person.id === shift.employee_id)?.display_name || 'کارمند'}>{(colleagues.find(person => person.id === shift.employee_id)?.display_name || 'کارمند').split(' ')[0]} · {shiftTypeLabel(shift.shift_type)}</span>)}
+               {cell.shifts.length > 3 && <small>+{cell.shifts.length - 3} شیفت دیگر</small>}
+             </div> : <div className="shift-calendar-day blank" key={'blank-'+index} />)}</div>
+             <p className="calendar-export-note">فایل خروجی شامل شیفت‌های همین ماه است و با Excel قابل بازکردن است.</p>
+           </section>
           <div className="shift-roster-heading"><h3>شیفت‌های آینده</h3><span>نمایش برنامه ثبت‌شده برای کارکنان فعال</span></div>{workShifts.length === 0 ? <div className="empty-state"><CalendarDays size={34}/><strong>شیفتی برای نمایش ثبت نشده است</strong><span>پس از ثبت برنامه توسط مدیر، شیفت‌ها در این قسمت نمایش داده می‌شوند.</span></div> : <div className="shift-roster">{workShifts.map(shift => { const owner=colleagues.find(person=>person.id===shift.employee_id); return <article className="shift-card" key={shift.id}><div className="shift-date-block"><strong>{new Date(shift.shift_date+'T12:00:00').toLocaleDateString('fa-IR',{day:'numeric'})}</strong><span>{new Date(shift.shift_date+'T12:00:00').toLocaleDateString('fa-IR',{month:'long',weekday:'short'})}</span></div><div className="shift-card-main"><strong>{owner?.display_name || 'کارمند'}</strong><span>{shift.department} · شیفت {shiftTypeLabel(shift.shift_type)}</span><small>{shift.starts_at.slice(0,5)} تا {shift.ends_at.slice(0,5)}{shift.notes ? ' · '+shift.notes : ''}</small></div><span className={'shift-type-pill '+shift.shift_type}>{shiftTypeLabel(shift.shift_type)}</span></article> })}</div>}
           {profile && <form className="shift-swap-form" onSubmit={requestShiftSwap}><h3>درخواست جابه‌جایی شیفت</h3><p>شیفت خود را با شیفت همکار دیگری انتخاب کنید. تغییر برنامه فقط پس از تأیید مدیر اعمال می‌شود.</p><label htmlFor="swap-from">شیفت خودم</label><select id="swap-from" required value={swapFromId} onChange={e=>setSwapFromId(e.target.value)}><option value="">انتخاب شیفت خودتان</option>{workShifts.filter(shift=>shift.employee_id===profile.id).map(shift=><option key={shift.id} value={shift.id}>{new Date(shift.shift_date+'T12:00:00').toLocaleDateString('fa-IR')} · {shiftTypeLabel(shift.shift_type)} · {shift.starts_at.slice(0,5)}</option>)}</select><label htmlFor="swap-to">شیفت همکار</label><select id="swap-to" required value={swapToId} onChange={e=>setSwapToId(e.target.value)}><option value="">انتخاب شیفت همکار</option>{workShifts.filter(shift=>shift.employee_id!==profile.id).map(shift=><option key={shift.id} value={shift.id}>{colleagues.find(person=>person.id===shift.employee_id)?.display_name || 'همکار'} · {new Date(shift.shift_date+'T12:00:00').toLocaleDateString('fa-IR')} · {shiftTypeLabel(shift.shift_type)}</option>)}</select><label htmlFor="swap-note">توضیح (اختیاری)</label><textarea id="swap-note" rows={2} maxLength={1000} value={swapNote} onChange={e=>setSwapNote(e.target.value)} placeholder="دلیل یا توضیح درخواست"/><button className="primary-btn" disabled={busy || !workShifts.some(s=>s.employee_id===profile.id)}>{busy?'در حال ارسال...':'ارسال درخواست جابه‌جایی'}</button></form>}
           <div className="shift-roster-heading"><h3>{isAdmin?'درخواست‌های جابه‌جایی کارکنان':'درخواست‌های جابه‌جایی من'}</h3></div>{shiftChangeRequests.filter(item=>isAdmin || item.requester_id===profile?.id).length===0 ? <p className="demo-note">درخواستی ثبت نشده است.</p> : <div className="request-list">{shiftChangeRequests.filter(item=>isAdmin || item.requester_id===profile?.id).map(item=>{const fromShift=workShifts.find(s=>s.id===item.from_shift_id);const toShift=workShifts.find(s=>s.id===item.to_shift_id);return <article className="request-row" key={item.id}><div className="request-symbol"><ArrowLeftRight/></div><div className="request-info"><strong>{colleagues.find(person=>person.id===item.requester_id)?.display_name || 'کارمند'} · درخواست جابه‌جایی</strong><span>{fromShift?new Date(fromShift.shift_date+'T12:00:00').toLocaleDateString('fa-IR'):'شیفت مبدأ'} ↔ {toShift?new Date(toShift.shift_date+'T12:00:00').toLocaleDateString('fa-IR'):'شیفت مقصد'}</span>{item.note&&<small>{item.note}</small>}<small>{new Date(item.created_at).toLocaleDateString('fa-IR')}</small></div><span className={item.status==='approved'?'status-approved':item.status==='rejected'?'status-rejected':'status-pending'}>{statusLabel(item.status)}</span>{isAdmin&&item.status==='pending'&&<div className="review-actions"><button className="approve-btn" disabled={busy} onClick={()=>reviewShiftSwap(item.id,'approved')}>تأیید و جابه‌جایی</button><button className="reject-btn" disabled={busy} onClick={()=>reviewShiftSwap(item.id,'rejected')}>رد</button></div>}</article>})}</div>}
