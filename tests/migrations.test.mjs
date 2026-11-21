@@ -115,6 +115,15 @@ test('notification center uses persisted database notifications', async () => {
   assert.match(app, /unreadNotificationCount/);
 });
 
+test('notification center filters persisted alerts by read state and category', async () => {
+  assert.match(app, /notificationReadFilter/)
+  assert.match(app, /notificationTypeFilter/)
+  assert.match(app, /const visibleNotifications = useMemo/)
+  assert.match(app, /visibleNotifications\.map\(item/)
+  assert.match(app, /اعلانی با این فیلتر پیدا نشد/)
+  assert.match(app, /پاک‌کردن فیلترها/)
+})
+
 test('employee notifications are durable, owner-scoped and trigger-generated', async () => {
   const sql = await readMigration('20261121220000_employee_notifications.sql');
   assert.match(sql, /create table if not exists public\.employee_notifications/i);
