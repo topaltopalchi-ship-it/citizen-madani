@@ -253,7 +253,7 @@ function App() {
       .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, 'fa'))
       .slice(0, 6)
   }, [filteredReportShifts, colleagues])
-  const filteredWelfarePartners = useMemo(() => welfarePartners.filter(item => welfareCategoryFilter === 'all' || item.category === welfareCategoryFilter), [welfarePartners, welfareCategoryFilter])\n  const filteredCommunityListings = useMemo(() => communityListings.filter(item => (listingTypeFilter === 'all' || item.listing_type === listingTypeFilter) && (listingStatusFilter === 'all' || item.status === listingStatusFilter) && (isAdmin || item.status === 'approved' || item.owner_id === profile?.id)), [communityListings, listingTypeFilter, listingStatusFilter, isAdmin, profile?.id])
+  const filteredWelfarePartners = useMemo(() => welfarePartners.filter(item => welfareCategoryFilter === 'all' || item.category === welfareCategoryFilter), [welfarePartners, welfareCategoryFilter])\n  const filteredCommunityListings = useMemo(() => communityListings.filter(item => (listingTypeFilter === 'all' || item.listing_type === listingTypeFilter) && (listingStatusFilter === 'all' || item.status === listingStatusFilter) && (isAdmin || item.owner_id === profile?.id || (item.status === 'approved' && new Date(item.expires_at).getTime() > Date.now()))), [communityListings, listingTypeFilter, listingStatusFilter, isAdmin, profile?.id])
   const filteredAuditEntries = useMemo(() => auditEntries.filter(entry => {
     const query = auditQuery.trim().toLocaleLowerCase('fa')
     const searchable = [auditActionLabel(entry.action), entry.entity_type, entry.action, entry.target_id || '', entry.actor_id || '', JSON.stringify(entry.details)].join(' ').toLocaleLowerCase('fa')
