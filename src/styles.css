@@ -282,3 +282,20 @@ body{background:radial-gradient(ellipse at 12% 0%,#e4f2f1 0,transparent 34%),lin
  .employee-edit-form .field-grid{grid-template-columns:1fr}
  .employee-edit-form>.primary-btn{width:100%}
 }
+
+
+/* Employee directory search, filters and live account counts */
+.employee-admin-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:15px 0}
+.employee-admin-summary>div{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:13px 15px;border:1px solid #e1ecea;border-radius:14px;background:linear-gradient(145deg,#f8fcfa,#f1f7f8);box-shadow:0 4px 12px #214c5c08}
+.employee-admin-summary strong{font-size:20px;line-height:1;color:#267c70;font-weight:900}
+.employee-admin-summary span{font-size:10px;color:#66828a;font-weight:700}
+.employee-admin-toolbar{display:grid;grid-template-columns:minmax(0,1fr) 175px;gap:10px;margin:12px 0}
+.employee-admin-search{display:flex;align-items:center;gap:9px;min-width:0;padding:0 12px;border:1px solid #dfeaec;border-radius:12px;background:#fff;color:#679095}
+.employee-admin-search:focus-within{border-color:#59a89f;box-shadow:0 0 0 3px #43a69a18}
+.employee-admin-search input{width:100%;min-width:0;height:42px;border:0!important;outline:0!important;background:transparent!important;box-shadow:none!important;color:#234b58;font-size:11px}
+.employee-admin-toolbar select{min-width:0;height:44px;padding:0 10px;border:1px solid #dfeaec;border-radius:12px;background:#fff;color:#315b66;font-size:11px;font-family:inherit}
+@media(max-width:480px){
+ .employee-admin-summary>div{padding:11px 10px;align-items:flex-start;flex-direction:column}
+ .employee-admin-toolbar{grid-template-columns:1fr}
+ .employee-admin-toolbar select{width:100%}
+}
