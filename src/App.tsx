@@ -93,6 +93,7 @@ function App() {
   const [transferStatus, setTransferStatus] = useState<{ stage: 'upload' | 'save' | 'cleanup'; current: number; total: number } | null>(null)
   const [isOnline, setIsOnline] = useState(() => typeof navigator === 'undefined' ? true : navigator.onLine)
   const [sendFailed, setSendFailed] = useState(false)
+  const sendingMessageRef = useRef(false)
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true)
@@ -547,6 +548,7 @@ function App() {
 
   const sendDirectMessage = async (e: FormEvent) => {
     e.preventDefault()
+    if (sendingMessageRef.current) return
     if (!isOnline) { setError('اتصال اینترنت برقرار نیست؛ پس از اتصال دوباره تلاش کنید.'); return }
     if (!supabase || !profile || !selectedContact || (!messageDraft.trim() && !messageAttachments.length)) return
     const allowedTypes = ['image/jpeg','image/png','image/webp','image/gif','application/pdf','text/plain','application/vnd.openxmlformats-officedocument.wordprocessingml.document','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']
@@ -555,7 +557,8 @@ function App() {
     if (filesToSend.length > 5 || totalSize > 10 * 1024 * 1024 || filesToSend.some(file => file.size === 0 || !allowedTypes.includes(file.type))) {
       setError('حداکثر ۵ فایل با مجموع حجم ۱۰ مگابایت مجاز است؛ نوع فایل‌ها را نیز بررسی کنید.'); return
     }
-    setBusy(true); setError(''); setMessage('')
+    sendingMessageRef.current = true
+    setBusy(true); setError(''); setMessage(''); setSendFailed(false)
     setTransferStatus(filesToSend.length ? { stage: 'upload', current: 0, total: filesToSend.length } : { stage: 'save', current: 0, total: 0 })
     const uploaded: MessageAttachment[] = []
     let failureStage: 'upload' | 'save' = filesToSend.length ? 'upload' : 'save'
@@ -590,8 +593,12 @@ function App() {
       if (uploaded.length) {
         setTransferStatus({ stage: 'cleanup', current: uploaded.length, total: uploaded.length })
         setMessage('ارسال ناموفق بود؛ در حال پاک‌سازی فایل‌های موقت...')
-        const { error: cleanupError } = await supabase.storage.from('employee-message-attachments').remove(uploaded.map(file => file.path))
-        cleanupFailed = Boolean(cleanupError)
+        try {
+          const { error: cleanupError } = await supabase.storage.from('employee-message-attachments').remove(uploaded.map(file => file.path))
+          cleanupFailed = Boolean(cleanupError)
+        } catch {
+          cleanupFailed = true
+        }
       }
       const stageMessage = failureStage === 'upload' ? 'بارگذاری یکی از فایل‌ها ناموفق بود.' : 'ثبت پیام در پایگاه داده ناموفق بود.'
       setError(cleanupFailed
@@ -600,7 +607,7 @@ function App() {
       setMessage('')
       setSendFailed(true)
       setTransferStatus(null)
-    } finally { setBusy(false) }
+    } finally { sendingMessageRef.current = false; setBusy(false) }
   }
 
   const deleteOwnMessage = async (item: DirectMessage) => {
