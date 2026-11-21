@@ -451,3 +451,19 @@ test('exchange request decisions store administrator identity and employee-facin
   assert.match(css, /\.request-review-editor/);
   assert.match(css, /\.request-review-note/);
 });
+
+test('exchange request management reports totals, outcomes, request types, and average review time', async () => {
+  const app = await readFile(new URL('../src/App.tsx', import.meta.url), 'utf8');
+  const css = await readFile(new URL('../src/styles.css', import.meta.url), 'utf8');
+  const readme = await readFile(new URL('../README.md', import.meta.url), 'utf8');
+  assert.match(app, /pendingExchangeRequests = requests\.filter/);
+  assert.match(app, /approvedExchangeRequests = requests\.filter/);
+  assert.match(app, /rejectedExchangeRequests = requests\.filter/);
+  assert.match(app, /averageExchangeReviewHours/);
+  assert.match(app, /departmentExchangeRequests/);
+  assert.match(app, /hospitalExchangeRequests/);
+  assert.match(app, /گزارش مدیریتی درخواست‌های تبادل/);
+  assert.match(css, /\.exchange-report-grid/);
+  assert.match(css, /\.exchange-report-card\.approved/);
+  assert.match(readme, /20261122020000_exchange_request_review_tracking\.sql/);
+});
