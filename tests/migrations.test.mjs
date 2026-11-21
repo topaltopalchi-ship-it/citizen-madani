@@ -11,7 +11,7 @@ test('Supabase migrations have unique, chronological version prefixes', async ()
   assert.deepEqual(files, sorted, 'migration filenames must already be chronological');
   const versions = files.map((name) => name.split('_')[0]);
   assert.equal(new Set(versions).size, versions.length, 'migration versions must be unique');
-  assert.equal(files.length, 19, 'README setup checklist must match the migration count');
+  assert.equal(files.length, 20, 'README setup checklist must match the migration count');
 });
 
 test('attachment metadata validation is bound to the authenticated sender and recipient path', async () => {
@@ -320,4 +320,19 @@ test('salary, karaneh, and overtime updates are published only by administrators
   assert.match(migration, /status = 'published' and public\.is_citizen_madani_active_employee\(\)/);
   assert.match(migration, /Admins manage compensation updates/);
   assert.match(migration, /created_by = auth\.uid\(\)/);
+});
+
+\ntest('employee welfare agreements are admin-managed and only current published offers are visible', async () => {
+  const migration = await readMigration('20261122000000_staff_welfare_partners.sql');
+  assert.match(migration, /create table if not exists public\\.welfare_partners/);
+  assert.match(migration, /'sports', 'shopping', 'food', 'health', 'travel', 'education', 'services', 'other'/);
+  assert.match(migration, /'discount', 'installment', 'special_price', 'other'/);
+  assert.match(migration, /discount_percent between 0 and 100/);
+  assert.match(migration, /benefit_type <> 'installment' or installment_terms is not null/);
+  assert.match(migration, /status = 'published'[\\s\\S]*?starts_at is null or starts_at <= now\\(\\)/);
+  assert.match(migration, /ends_at is null or ends_at > now\\(\\)/);
+  assert.match(migration, /public\\.is_citizen_madani_active_employee\\(\\)/);
+  assert.match(migration, /Admins manage welfare partners/);
+  assert.match(migration, /created_by = auth\\.uid\\(\\)/);
+  assert.match(migration, /alter table public\\.welfare_partners enable row level security/);
 });
