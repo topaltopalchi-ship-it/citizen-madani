@@ -24,9 +24,15 @@ begin
   if auth.uid() is null
      or p_sender_id <> auth.uid()
      or p_recipient_id = auth.uid()
-     or p_attachments is null
-     or jsonb_typeof(p_attachments) <> 'array'
-     or jsonb_array_length(p_attachments) > 5 then
+     or p_attachments is null then
+    return false;
+  end if;
+
+  if jsonb_typeof(p_attachments) <> 'array' then
+    return false;
+  end if;
+
+  if jsonb_array_length(p_attachments) > 5 then
     return false;
   end if;
 
@@ -44,6 +50,7 @@ begin
     if v_path is null
        or v_name is null
        or char_length(v_name) not between 1 and 255
+       or v_type is null
        or v_type not in (
          'image/jpeg','image/png','image/webp','image/gif','application/pdf',
          'text/plain',
