@@ -226,6 +226,20 @@ test('admin dashboard displays a live shift-type breakdown for the selected mont
 });
 
 
+test('shift report shows a six-month trend using current report filters and zero-count months', async () => {
+  const app = await readFile(new URL('../src/App.tsx', import.meta.url), 'utf8');
+  const css = await readFile(new URL('../src/styles.css', import.meta.url), 'utf8');
+  assert.match(app, /const sixMonthShiftTrend = useMemo/);
+  assert.match(app, /Array\.from\(\{ length: 6 \}/);
+  assert.match(app, /reportDepartment === 'all' \|\| shift\.department === reportDepartment/);
+  assert.match(app, /reportShiftType === 'all' \|\| shift\.shift_type === reportShiftType/);
+  assert.match(app, /reportEmployee === 'all' \|\| shift\.employee_id === reportEmployee/);
+  assert.match(app, /روند شش‌ماهه شیفت‌ها/);
+  assert.match(app, /shift-six-month-column/);
+  assert.match(css, /\.shift-six-month-chart/);
+  assert.match(css, /\.shift-six-month-column/);
+});
+
 test('shift report exports filtered rows to a formatted Excel workbook', async () => {
   const app = await readFile(new URL('../src/App.tsx', import.meta.url), 'utf8');
   assert.match(app, /const exportShiftCalendarExcel = \(\) =>/);
