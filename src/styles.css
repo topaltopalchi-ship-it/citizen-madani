@@ -228,3 +228,28 @@ body{background:radial-gradient(ellipse at 12% 0%,#e4f2f1 0,transparent 34%),lin
 @media(prefers-reduced-motion:reduce){
  *,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
 }
+
+
+/* Messenger usability refinements */
+.contact-search{display:flex;align-items:center;gap:8px;padding:9px 11px;margin:4px 0 9px;border:1px solid #e0ebec;border-radius:11px;background:#fff;color:#7c999d}
+.contact-search input{width:100%;min-width:0;border:0!important;outline:0!important;background:transparent!important;box-shadow:none!important;color:#254c59;font-size:11px}
+.contact-search:focus-within{border-color:#58aaa1;box-shadow:0 0 0 3px #43a69a18}
+.contact-list{min-width:0}
+.contact-button{overflow:hidden;text-align:right}
+.contact-button .avatar{flex-shrink:0}
+.chat-messages{min-width:0;overflow-wrap:anywhere}
+.chat-bubble{max-width:min(86%,560px);overflow-wrap:anywhere}
+.chat-bubble small{display:block;direction:rtl;text-align:left;margin-top:5px;color:#81979d;font-size:9px}
+.chat-compose{gap:10px}
+.chat-compose textarea{min-width:0;resize:vertical}
+.chat-compose .primary-btn{flex-shrink:0;white-space:nowrap}
+@media(max-width:700px){
+ .messenger-layout{grid-template-columns:minmax(0,1fr)}
+ .contact-list{max-height:250px;overflow:auto}
+ .chat-bubble{max-width:94%}
+ .chat-compose{align-items:stretch}
+}
+@media(max-width:420px){
+ .chat-compose{flex-direction:column}
+ .chat-compose .primary-btn{width:100%;justify-content:center}
+}
