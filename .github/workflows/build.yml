@@ -10,7 +10,7 @@ permissions:
 
 # Push and pull-request events for the same branch share one CI slot.
 concurrency:
-  group: citizen-madani-${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  group: citizen-madani-${{ github.workflow }}-${{ github.event.pull_request.head.ref || github.ref_name }}
   cancel-in-progress: true
 jobs:
   build:
