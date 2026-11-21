@@ -6,7 +6,7 @@ type Page = 'خانه' | 'همکاران' | 'درخواست تبادل' | 'در�
 type Profile = { id: string; display_name: string; department: string | null; job_title: string | null; role?: string; is_active?: boolean }
 type ExchangeRequest = { id: string; employee_id?: string; request_type: string; from_unit: string; to_unit: string; note: string | null; status: string; created_at: string }
 type Announcement = { id: string; title: string; body: string; priority: 'normal' | 'important'; is_published: boolean; created_at: string; published_at: string | null }
-type DirectMessage = { id: string; sender_id: string; recipient_id: string; body: string; created_at: string; read_at: string | null }
+type DirectMessage = { id: string; sender_id: string; recipient_id: string; body: string; created_at: string; read_at: string | null; attachment_path?: string | null; attachment_name?: string | null; attachment_type?: string | null; attachment_size?: number | null }
 type AuditEntry = { id: number; actor_id: string | null; target_id: string | null; entity_type: string; action: string; details: Record<string, unknown>; created_at: string }
 type WorkShift = { id: string; employee_id: string; shift_date: string; shift_type: 'morning' | 'evening' | 'night'; starts_at: string; ends_at: string; department: string; notes: string | null; created_at: string }
 type ShiftChangeRequest = { id: string; requester_id: string; from_shift_id: string; to_shift_id: string; note: string | null; status: string; reviewed_by: string | null; reviewed_at: string | null; created_at: string }
@@ -47,6 +47,7 @@ function App() {
   const [contactQuery, setContactQuery] = useState('')
   const threadLoadSequence = useRef(0)
   const [messageDraft, setMessageDraft] = useState('')
+  const [messageAttachment, setMessageAttachment] = useState<File | null>(null)
   const [unreadCount, setUnreadCount] = useState(0)
   const [auditEntries, setAuditEntries] = useState<AuditEntry[]>([])
   const [workShifts, setWorkShifts] = useState<WorkShift[]>([])
@@ -240,7 +241,7 @@ function App() {
       } else if (active) setAuditEntries([])
       const [{ count }, inboxResult] = await Promise.all([
         client.from('direct_messages').select('id', { count: 'exact', head: true }).eq('recipient_id', userId).is('read_at', null),
-        client.from('direct_messages').select('id,sender_id,recipient_id,body,created_at,read_at').or(`sender_id.eq.${userId},recipient_id.eq.${userId}`).order('created_at', { ascending: false }).limit(300),
+        client.from('direct_messages').select('id,sender_id,recipient_id,body,created_at,read_at,attachment_path,attachment_name,attachment_type,attachment_size').or(`sender_id.eq.${userId},recipient_id.eq.${userId}`).order('created_at', { ascending: false }).limit(300),
       ])
       if (active) { setUnreadCount(count ?? 0); if (inboxResult.data) setInboxMessages(inboxResult.data as DirectMessage[]) }
       const ids = [...new Set((requestResult.data ?? []).map((r: any) => r.employee_id))]
@@ -451,7 +452,7 @@ function App() {
     const sequence = ++threadLoadSequence.current
     setSelectedContact(contact); setThreadMessages([]); setThreadLoading(true); setError('')
     const { data, error: loadError } = await supabase.from('direct_messages')
-      .select('id,sender_id,recipient_id,body,created_at,read_at')
+      .select('id,sender_id,recipient_id,body,created_at,read_at,attachment_path,attachment_name,attachment_type,attachment_size')
       .or(`and(sender_id.eq.${profile.id},recipient_id.eq.${contact.id}),and(sender_id.eq.${contact.id},recipient_id.eq.${profile.id})`)
       .order('created_at', { ascending: true })
     if (sequence !== threadLoadSequence.current) return
@@ -475,14 +476,31 @@ function App() {
 
   const sendDirectMessage = async (e: FormEvent) => {
     e.preventDefault()
-    if (!supabase || !profile || !selectedContact || !messageDraft.trim()) return
+    if (!supabase || !profile || !selectedContact || (!messageDraft.trim() && !messageAttachment)) return
+    const allowedTypes = ['image/jpeg','image/png','image/webp','image/gif','application/pdf','text/plain','application/vnd.openxmlformats-officedocument.wordprocessingml.document','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']
+    if (messageAttachment && (messageAttachment.size > 10 * 1024 * 1024 || !allowedTypes.includes(messageAttachment.type))) { setError('نوع فایل مجاز نیست یا حجم آن بیشتر از ۱۰ مگابایت است.'); return }
     setBusy(true); setError('')
+    let attachmentPath: string | null = null
+    if (messageAttachment) {
+      const safeName = messageAttachment.name.normalize('NFKC').replace(/[^\p{L}\p{N}._-]/gu, '_').slice(-100) || 'attachment'
+      attachmentPath = profile.id + '/' + selectedContact.id + '/' + crypto.randomUUID() + '-' + safeName
+      const { error: uploadError } = await supabase.storage.from('employee-message-attachments').upload(attachmentPath, messageAttachment, { contentType: messageAttachment.type, upsert: false })
+      if (uploadError) { setError('بارگذاری پیوست انجام نشد. دسترسی ذخیره‌سازی را بررسی کنید.'); setBusy(false); return }
+    }
     const { data, error: sendError } = await supabase.from('direct_messages').insert({
       sender_id: profile.id, recipient_id: selectedContact.id, body: messageDraft.trim(),
-    }).select('id,sender_id,recipient_id,body,created_at,read_at').single()
-    if (sendError) setError('ارسال پیام انجام نشد. اتصال و دسترسی حساب را بررسی کنید.')
-    else { setThreadMessages(current => [...current, data]); setInboxMessages(current => [data, ...current.filter(m => m.id !== data.id)]); setMessageDraft(''); setMessage('پیام ارسال شد.') }
+      attachment_path: attachmentPath, attachment_name: messageAttachment?.name ?? null, attachment_type: messageAttachment?.type ?? null, attachment_size: messageAttachment?.size ?? null,
+    }).select('id,sender_id,recipient_id,body,created_at,read_at,attachment_path,attachment_name,attachment_type,attachment_size').single()
+    if (sendError) { if (attachmentPath) await supabase.storage.from('employee-message-attachments').remove([attachmentPath]); setError('ارسال پیام انجام نشد. اتصال و دسترسی حساب را بررسی کنید.') }
+    else { setThreadMessages(current => [...current, data]); setInboxMessages(current => [data, ...current.filter(m => m.id !== data.id)]); setMessageDraft(''); setMessageAttachment(null); setMessage('پیام ارسال شد.') }
     setBusy(false)
+  }
+
+  const openMessageAttachment = async (item: DirectMessage) => {
+    if (!supabase || !item.attachment_path) return
+    const { data, error: linkError } = await supabase.storage.from('employee-message-attachments').createSignedUrl(item.attachment_path, 60)
+    if (linkError || !data?.signedUrl) { setError('دریافت پیوست ممکن نیست؛ دسترسی گفت‌وگو را بررسی کنید.'); return }
+    window.open(data.signedUrl, '_blank', 'noopener,noreferrer')
   }
 
   const go = (next: Page) => { setPage(next); setMobileNav(false); setError('') }
@@ -559,8 +577,8 @@ function App() {
             <aside className="contact-list"><strong>گفت‌وگوها <small className="conversation-sort-hint">مرتب‌شده بر اساس آخرین پیام</small></strong><div className="contact-search"><Search size={16}/><input value={contactQuery} onChange={e => setContactQuery(e.target.value)} placeholder="جست‌وجوی نام یا متن پیام..." aria-label="جست‌وجوی همکار"/></div>{sortedContacts.map(c => <button key={c.id} className={selectedContact?.id === c.id ? 'contact-button selected' : 'contact-button'} onClick={() => loadThread(c)}><span className="avatar">{c.display_name?.slice(0,1) || 'ک'}</span><span className="contact-copy"><b>{c.display_name}</b><small>{inboxByContact.get(c.id)?.latest.body || c.department || c.job_title || 'شروع گفت‌وگوی خصوصی'}</small></span><span className="contact-meta">{inboxByContact.get(c.id)?.latest && <time>{new Date(inboxByContact.get(c.id)!.latest.created_at).toLocaleDateString('fa-IR',{month:'numeric',day:'numeric'})}</time>}{Boolean(inboxByContact.get(c.id)?.unread) && <i>{inboxByContact.get(c.id)!.unread > 99 ? '99+' : inboxByContact.get(c.id)!.unread}</i>}</span></button>)}</aside>
             <div className="chat-panel">
               {selectedContact ? <><div className="chat-heading"><strong>{selectedContact.display_name}</strong><small>{selectedContact.department || 'همکار بیمارستان مدنی'}</small></div>
-                <div className="chat-messages">{threadLoading ? <div className="empty-chat">در حال بارگذاری گفت‌وگو...</div> : threadMessages.length ? threadMessages.map(m => <div key={m.id} className={m.sender_id === profile?.id ? 'chat-bubble mine' : 'chat-bubble'}><p>{m.body}</p><small>{new Date(m.created_at).toLocaleString('fa-IR')}</small></div>) : <div className="empty-chat">هنوز پیامی در این گفت‌وگو وجود ندارد.</div>}</div>
-                <form className="chat-compose" onSubmit={sendDirectMessage}><textarea value={messageDraft} onChange={e => setMessageDraft(e.target.value)} maxLength={4000} rows={2} placeholder="پیام خود را بنویسید..." /><button className="primary-btn" disabled={busy || !messageDraft.trim()}>{busy ? 'در حال ارسال...' : 'ارسال پیام'}</button></form>
+                <div className="chat-messages">{threadLoading ? <div className="empty-chat">در حال بارگذاری گفت‌وگو...</div> : threadMessages.length ? threadMessages.map(m => <div key={m.id} className={m.sender_id === profile?.id ? 'chat-bubble mine' : 'chat-bubble'}>{m.body && <p>{m.body}</p>}{m.attachment_path && <button type="button" className="message-attachment" onClick={() => openMessageAttachment(m)}><span>{m.attachment_type?.startsWith('image/') ? 'تصویر' : 'فایل پیوست'}</span><b>{m.attachment_name || 'دریافت فایل'}</b><small>{m.attachment_size ? (m.attachment_size / 1024 / 1024).toFixed(2) + ' مگابایت' : ''}</small></button>}<small>{new Date(m.created_at).toLocaleString('fa-IR')}</small></div>) : <div className="empty-chat">هنوز پیامی در این گفت‌وگو وجود ندارد.</div>}</div>
+                <form className="chat-compose" onSubmit={sendDirectMessage}><textarea value={messageDraft} onChange={e => setMessageDraft(e.target.value)} maxLength={4000} rows={2} placeholder="پیام خود را بنویسید..." /><div className="chat-compose-tools"><label className="attachment-picker">＋ پیوست فایل یا تصویر<input type="file" accept="image/jpeg,image/png,image/webp,image/gif,application/pdf,text/plain,.docx,.xlsx" onChange={e => setMessageAttachment(e.target.files?.[0] ?? null)} /></label>{messageAttachment && <span className="attachment-selected">{messageAttachment.name}<button type="button" aria-label="حذف پیوست" onClick={() => setMessageAttachment(null)}>×</button></span>}<small>حداکثر ۱۰ مگابایت</small><button className="primary-btn" disabled={busy || (!messageDraft.trim() && !messageAttachment)}>{busy ? 'در حال ارسال...' : 'ارسال پیام'}</button></div></form>
               </> : <div className="empty-state"><Users size={34}/><strong>یک همکار را انتخاب کنید</strong><span>برای شروع گفت‌وگوی خصوصی، نام همکار را از فهرست انتخاب کنید.</span></div>}
             </div>
           </div>}
