@@ -210,6 +210,12 @@ function App() {
     .slice(0, 3), [workShifts, profile?.id, todayKey])
   const adminPendingRequests = requests.filter(request => request.status === 'pending').length
   const adminPendingShiftChanges = shiftChangeRequests.filter(request => request.status === 'pending').length
+  const adminDepartmentStats = useMemo(() => {
+    const counts = new Map<string, number>()
+    calendarMonthShifts.forEach(shift => counts.set(shift.department, (counts.get(shift.department) || 0) + 1))
+    return Array.from(counts.entries()).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'fa')).slice(0, 4)
+  }, [calendarMonthShifts])
+  const adminMaxDepartmentShifts = Math.max(1, ...adminDepartmentStats.map(([, count]) => count))
   const activeEmployeeCount = colleagues.filter(employee => employee.is_active !== false).length
   const inactiveEmployeeCount = colleagues.length - activeEmployeeCount
   const inboxByContact = useMemo(() => {
@@ -859,7 +865,21 @@ function App() {
               {announcements.filter(item => item.is_published).slice(0,3).length ? <div className="home-announcement-list">{announcements.filter(item => item.is_published).slice(0,3).map(item => <button key={item.id} onClick={() => go('اطلاعیه‌ها')}><span className={item.priority === 'important' ? 'announcement-dot important' : 'announcement-dot'}/><span><strong>{item.title}</strong><small>{new Date(item.published_at || item.created_at).toLocaleDateString('fa-IR')}</small></span><ChevronLeft size={15}/></button>)}</div> : <p className="home-overview-empty">هنوز اطلاعیه‌ای منتشر نشده است.</p>}
             </article>
           </section>}
-          {isAdmin && <section className="admin-home-summary"><div><span>درخواست‌های سازمانی در انتظار</span><strong>{adminPendingRequests}</strong><button onClick={() => go('مدیریت درخواست‌ها')}>بررسی درخواست‌ها <ChevronLeft size={14}/></button></div><div><span>درخواست‌های جابه‌جایی شیفت</span><strong>{adminPendingShiftChanges}</strong><button onClick={() => go('برنامه شیفت‌ها')}>مدیریت شیفت‌ها <ChevronLeft size={14}/></button></div></section>}
+          {isAdmin && <section className="admin-dashboard">
+            <div className="admin-dashboard-heading"><div><span className="admin-dashboard-kicker">نمای مدیریتی</span><h2>خلاصه وضعیت بیمارستان</h2><p>آمار به‌روز بر اساس اطلاعات ثبت‌شده در سامانه</p></div><span className="admin-dashboard-period">{calendarMonth.toLocaleDateString('fa-IR', { year: 'numeric', month: 'long' })}</span></div>
+            <div className="admin-dashboard-stats">
+              <article className="admin-metric employees"><span className="admin-metric-icon"><Users size={19}/></span><div><small>کارکنان فعال</small><strong>{activeEmployeeCount}</strong><em>{inactiveEmployeeCount} حساب غیرفعال</em></div></article>
+              <article className="admin-metric requests"><span className="admin-metric-icon"><ClipboardList size={19}/></span><div><small>درخواست‌های سازمانی باز</small><strong>{adminPendingRequests}</strong><em>نیازمند بررسی مدیر</em></div></article>
+              <article className="admin-metric shifts"><span className="admin-metric-icon"><CalendarDays size={19}/></span><div><small>درخواست جابه‌جایی شیفت</small><strong>{adminPendingShiftChanges}</strong><em>در انتظار تصمیم</em></div></article>
+              <article className="admin-metric schedule"><span className="admin-metric-icon"><Activity size={19}/></span><div><small>شیفت‌های این ماه</small><strong>{calendarMonthShifts.length}</strong><em>{new Set(calendarMonthShifts.map(shift => shift.employee_id)).size} کارمند دارای شیفت</em></div></article>
+            </div>
+            <div className="admin-dashboard-lower">
+              <article className="admin-department-card"><div className="admin-subheading"><div><strong>توزیع شیفت در بخش‌ها</strong><small>چهار بخش با بیشترین شیفت در ماه انتخاب‌شده</small></div><button onClick={() => go('برنامه شیفت‌ها')}>گزارش کامل <ChevronLeft size={14}/></button></div>
+                {adminDepartmentStats.length ? <div className="admin-department-bars">{adminDepartmentStats.map(([department, count]) => <div className="admin-department-row" key={department}><div><span>{department}</span><b>{count}</b></div><div className="admin-department-track"><i style={{ width: (count / adminMaxDepartmentShifts * 100) + '%' }}/></div></div>)}</div> : <p className="admin-dashboard-empty">برای این ماه هنوز شیفتی ثبت نشده است.</p>}
+              </article>
+              <article className="admin-actions-card"><strong>دسترسی مدیریتی سریع</strong><small>مدیریت بخش‌های اصلی سامانه</small><button onClick={() => go('مدیریت درخواست‌ها')}><ClipboardList size={16}/> بررسی درخواست‌ها <ChevronLeft size={15}/></button><button onClick={() => go('مدیریت کارکنان')}><Users size={16}/> مدیریت کارکنان <ChevronLeft size={15}/></button><button onClick={() => go('سجل فعالیت‌ها')}><History size={16}/> مشاهده سجل فعالیت‌ها <ChevronLeft size={15}/></button><button onClick={() => go('اطلاعیه‌ها')}><Megaphone size={16}/> انتشار اطلاعیه <ChevronLeft size={15}/></button></article>
+            </div>
+          </section>}
           <div className="section-heading"><div><h2>دسترسی سریع</h2><p>از بخش موردنظر خود شروع کنید.</p></div></div>
           <section className="quick-grid"><Quick icon={Users} title="فهرست همکاران" text="جست‌وجو و مشاهده همکاران" onClick={() => go('همکاران')} /><Quick icon={ArrowLeftRight} title="تبادل بخش یا بیمارستان" text="ثبت درخواست جابه‌جایی سازمانی" onClick={() => go('درخواست تبادل')} /><Quick icon={ClipboardList} title="پیگیری درخواست‌ها" text="مشاهده وضعیت درخواست‌های خود" onClick={() => go('درخواست‌های من')} /></section>
           <section className="notice"><div className="notice-icon"><Bell size={20} /></div><div><strong>اطلاعیه سامانه</strong><p>اطلاعات کارکنان و درخواست‌ها فقط پس از ورود معتبر و از پایگاه داده دریافت می‌شوند.</p></div></section>
