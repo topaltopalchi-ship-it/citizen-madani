@@ -10,6 +10,22 @@ drop policy if exists "Message participants read attachments" on storage.objects
 create policy "Message participants read attachments" on storage.objects for select to authenticated using (bucket_id='employee-message-attachments' and exists(select 1 from public.direct_messages dm where dm.attachment_path=storage.objects.name and (dm.sender_id=auth.uid() or dm.recipient_id=auth.uid())));
 drop policy if exists "Message sender deletes own orphan attachments" on storage.objects;
 create policy "Message sender deletes own orphan attachments" on storage.objects for delete to authenticated using (bucket_id='employee-message-attachments' and (storage.foldername(name))[1]=auth.uid()::text and not exists(select 1 from public.direct_messages dm where dm.attachment_path=storage.objects.name));
+create or replace function public.owns_employee_message_attachment(object_path text)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $
+  select exists (
+    select 1 from storage.objects o
+    where o.bucket_id = 'employee-message-attachments'
+      and o.name = object_path
+      and o.owner_id = auth.uid()::text
+  );
+$;
+revoke all on function public.owns_employee_message_attachment(text) from public;
+grant execute on function public.owns_employee_message_attachment(text) to authenticated;
 drop policy if exists "Employees send direct messages" on public.direct_messages;
-create policy "Employees send direct messages" on public.direct_messages for insert to authenticated with check (sender_id=auth.uid() and recipient_id<>auth.uid() and exists(select 1 from public.employee_profiles p where p.id=recipient_id and p.is_active=true) and exists(select 1 from public.employee_profiles p where p.id=sender_id and p.is_active=true) and (attachment_path is null or ((storage.foldername(attachment_path))[1]=sender_id::text and (storage.foldername(attachment_path))[2]=recipient_id::text and exists(select 1 from storage.objects o where o.bucket_id='employee-message-attachments' and o.name=attachment_path)));
+create policy "Employees send direct messages" on public.direct_messages for insert to authenticated with check (sender_id=auth.uid() and recipient_id<>auth.uid() and exists(select 1 from public.employee_profiles p where p.id=recipient_id and p.is_active=true) and exists(select 1 from public.employee_profiles p where p.id=sender_id and p.is_active=true) and (attachment_path is null or ((storage.foldername(attachment_path))[1]=sender_id::text and (storage.foldername(attachment_path))[2]=recipient_id::text and public.owns_employee_message_attachment(attachment_path)));
 grant select,insert on public.direct_messages to authenticated;
