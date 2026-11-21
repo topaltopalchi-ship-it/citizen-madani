@@ -640,3 +640,14 @@ body{background:radial-gradient(ellipse at 12% 0%,#e4f2f1 0,transparent 34%),lin
 .notification-filter-empty span{font-size:10px;line-height:1.8}
 .notification-filter-empty .small-outline{margin-top:4px}
 @media(max-width:520px){.notification-filters,.notification-type-filters{gap:6px}.notification-filters button,.notification-type-filters button{flex:1 1 auto;min-height:37px;padding:7px 9px;font-size:9px}}
+
+
+/* Account security settings */
+.account-security-panel{margin-top:14px}
+.account-security-panel .panel-title>svg{flex:0 0 auto;color:#368d7e}
+.account-password-form{display:grid;gap:9px;max-width:520px}
+.account-password-form label{color:#58757a;font-size:11px;font-weight:800}
+.account-password-form input{width:100%;min-height:43px;padding:10px 12px;border:1px solid #dce8e7;border-radius:11px;background:#fff;color:#315b65;font:inherit;font-size:12px;outline:none}
+.account-password-form input:focus{border-color:#60a69d;box-shadow:0 0 0 3px #60a69d1c}
+.account-password-form .primary-btn{justify-self:start;margin-top:5px}
+@media(max-width:600px){.account-password-form .primary-btn{width:100%}}
