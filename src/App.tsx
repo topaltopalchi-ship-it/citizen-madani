@@ -4,7 +4,7 @@ import * as XLSX from 'xlsx'
 import mammoth from 'mammoth'
 import { supabase } from './lib/supabase'
 
-type Page = 'خانه' | 'همکاران' | 'درخواست تبادل' | 'درخواست‌های من' | 'پروفایل' | 'مدیریت درخواست‌ها' | 'مدیریت کارکنان' | 'سجل فعالیت‌ها' | 'برنامه شیفت‌ها' | 'اطلاعیه‌ها' | 'پیام‌ها'
+type Page = 'خانه' | 'همکاران' | 'درخواست تبادل' | 'درخواست‌های من' | 'پروفایل' | 'مدیریت درخواست‌ها' | 'مدیریت کارکنان' | 'سجل فعالیت‌ها' | 'برنامه شیفت‌ها' | 'اطلاعیه‌ها' | 'پیام‌ها' | 'مرکز اعلان‌ها'
 type Profile = { id: string; display_name: string; department: string | null; job_title: string | null; role?: string; is_active?: boolean }
 type ExchangeRequest = { id: string; employee_id?: string; request_type: string; from_unit: string; to_unit: string; note: string | null; status: string; created_at: string }
 type Announcement = { id: string; title: string; body: string; priority: 'normal' | 'important'; is_published: boolean; created_at: string; published_at: string | null }
@@ -22,7 +22,7 @@ function dateKey(date: Date) {
 const nav: { label: Page; icon: typeof Home }[] = [
   { label: 'خانه', icon: Home }, { label: 'همکاران', icon: Users }, { label: 'برنامه شیفت‌ها', icon: CalendarDays },
   { label: 'درخواست تبادل', icon: ArrowLeftRight }, { label: 'درخواست‌های من', icon: ClipboardList },
-  { label: 'پروفایل', icon: UserRound }, { label: 'اطلاعیه‌ها', icon: Megaphone }, { label: 'پیام‌ها', icon: Bell },
+  { label: 'پروفایل', icon: UserRound }, { label: 'اطلاعیه‌ها', icon: Megaphone }, { label: 'پیام‌ها', icon: Bell }, { label: 'مرکز اعلان‌ها', icon: Activity },
 ]
 
 function App() {
@@ -183,6 +183,23 @@ function App() {
   const pendingMyRequests = myRequests.filter(request => request.status === 'pending').length
   const approvedMyRequests = myRequests.filter(request => request.status === 'approved').length
   const publishedAnnouncementCount = announcements.filter(item => item.is_published).length
+  const activityNotifications = useMemo(() => {
+    const items: { id: string; title: string; detail: string; date: string; kind: 'message' | 'request' | 'shift' | 'announcement'; target: Page; priority?: boolean }[] = []
+    if (unreadCount > 0) items.push({ id: 'unread-messages', title: 'پیام‌های خوانده‌نشده', detail: `${unreadCount} پیام جدید در صندوق پیام‌های شما وجود دارد.`, date: new Date().toISOString(), kind: 'message', target: 'پیام‌ها' })
+    myRequests.filter(item => item.status !== 'pending').forEach(item => items.push({
+      id: `request-${item.id}`, title: item.status === 'approved' ? 'درخواست شما تأیید شد' : 'وضعیت درخواست شما تغییر کرد',
+      detail: `${item.request_type} · ${item.from_unit} ← ${item.to_unit}`, date: item.created_at, kind: 'request', target: 'درخواست‌های من'
+    }))
+    shiftChangeRequests.filter(item => item.requester_id === profile?.id && item.status !== 'pending').forEach(item => items.push({
+      id: `shift-${item.id}`, title: item.status === 'approved' ? 'درخواست جابه‌جایی شیفت تأیید شد' : 'درخواست جابه‌جایی شیفت رد شد',
+      detail: item.note || 'وضعیت درخواست جابه‌جایی شیفت شما به‌روزرسانی شد.', date: item.reviewed_at || item.created_at, kind: 'shift', target: 'برنامه شیفت‌ها'
+    }))
+    announcements.filter(item => item.is_published).slice(0, 12).forEach(item => items.push({
+      id: `announcement-${item.id}`, title: item.title, detail: item.body, date: item.published_at || item.created_at,
+      kind: 'announcement', target: 'اطلاعیه‌ها', priority: item.priority === 'important'
+    }))
+    return items.sort((left, right) => right.date.localeCompare(left.date)).slice(0, 30)
+  }, [unreadCount, myRequests, shiftChangeRequests, profile?.id, announcements])
   const todayKey = dateKey(new Date())
   const myUpcomingShifts = useMemo(() => workShifts
     .filter(shift => shift.employee_id === profile?.id && shift.shift_date >= todayKey)
@@ -722,6 +739,7 @@ function App() {
       <div className="brand-mark"><Building2 size={23} /></div>
       <div className="brand"><strong>شهروند مدنی</strong><span>جامعه دیجیتال کارکنان بیمارستان مدنی</span></div>
       <div className="top-actions">
+        {userEmail && <button className="icon-btn notification-center-trigger" onClick={() => go('مرکز اعلان‌ها')} aria-label="مرکز اعلان‌ها" title="مرکز اعلان‌ها"><Bell size={18} />{activityNotifications.length > 0 && <span>{activityNotifications.length > 99 ? '99+' : activityNotifications.length}</span>}</button>}
         {userEmail && <button className="icon-btn" onClick={logout} aria-label="خروج"><LogOut size={18} /></button>}
         <button className="login-btn" onClick={() => userEmail ? go('پروفایل') : setShowLogin(true)}>
           {userEmail ? <UserRound size={17} /> : <LogIn size={17} />}{userEmail ? (profile?.display_name || 'حساب کاربری') : 'ورود کارکنان'}
@@ -741,6 +759,12 @@ function App() {
         {message && <div className="notice"><div className="notice-icon"><ShieldCheck size={20} /></div><div><strong>پیام سامانه</strong><p>{message}</p></div><button className="small-outline" onClick={() => setMessage('')}>بستن</button></div>}
         {error && <div className="notice" role="alert"><div className="notice-icon"><Bell size={20} /></div><div><strong>توجه</strong><p>{error}</p></div><button className="small-outline" onClick={() => setError('')}>بستن</button></div>}
         {!configured && <div className="notice"><div className="notice-icon"><Activity size={20} /></div><div><strong>اتصال پایگاه داده تنظیم نشده است</strong><p>برای فعال‌سازی ورود و ذخیره اطلاعات، متغیرهای Supabase را در تنظیمات محیط اجرا وارد کنید.</p></div></div>}
+        {page === 'مرکز اعلان‌ها' && <section className="panel notification-center">
+          <div className="panel-title"><div><h2>مرکز اعلان‌ها</h2><p>پیام‌ها، وضعیت درخواست‌ها و اطلاعیه‌های مهم در یک نگاه</p></div><span className="count-pill">{activityNotifications.length} رویداد</span></div>
+          {!userEmail ? <LoginPrompt onLogin={() => setShowLogin(true)} /> : activityNotifications.length === 0 ? <div className="empty-state"><Bell size={36}/><strong>اعلان تازه‌ای ندارید</strong><span>با دریافت پیام یا انتشار اطلاعیه، موارد جدید اینجا نمایش داده می‌شوند.</span></div> : <div className="notification-list">{activityNotifications.map(item => <article className="notification-card" key={item.id}>
+            <div className={'notification-icon '+item.kind}><Bell size={17}/></div><div className="notification-copy"><div className="notification-title-row"><strong>{item.title}</strong>{item.priority && <span className="announcement-priority important">مهم</span>}</div><p>{item.detail}</p><small>{new Date(item.date).toLocaleString('fa-IR')}</small></div><button className="small-outline" onClick={() => go(item.target)}>مشاهده</button>
+          </article>)}</div>}
+        </section>}
         {page === 'خانه' && <>
           <section className="hero-card"><div className="hero-content"><span className="hero-tag">کنار هم، قوی‌تر</span><h2>یک جامعه؛ هزاران فرصت همکاری</h2><p>با همکاران خود ارتباط بگیرید، درخواست‌های همکاری ثبت کنید و از تازه‌ترین اطلاعیه‌ها باخبر شوید.</p><button onClick={() => go('همکاران')} className="hero-btn">مشاهده همکاران <ChevronLeft size={17} /></button></div><div className="hero-art"><div className="orbit orbit-one" /><div className="orbit orbit-two" /><div className="hero-building"><Building2 size={74} /><span>مدنی</span></div><div className="float-bubble bubble-a"><Users size={21} /></div><div className="float-bubble bubble-b"><HeartHandshake size={21} /></div></div></section>
           <section className="stats-grid"><Stat icon={Users} value={userEmail ? String(activeEmployeeCount) : '—'} label="کارکنان فعال" hint="اعضای فعال جامعه مدنی" /><Stat icon={ArrowLeftRight} value={userEmail ? String(myRequests.length) : '—'} label="درخواست‌های من" hint={userEmail ? pendingMyRequests + ' در انتظار · ' + approvedMyRequests + ' تأییدشده' : 'پس از ورود قابل مشاهده است'} /><Stat icon={Megaphone} value={userEmail ? String(publishedAnnouncementCount) : '—'} label="اطلاعیه‌های منتشرشده" hint="خبرهای قابل مشاهده کارکنان" /><Stat icon={Activity} value={configured ? 'متصل' : 'نیازمند تنظیم'} label="وضعیت سامانه" hint="وضعیت اتصال پایگاه داده" /></section>
