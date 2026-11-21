@@ -406,3 +406,25 @@ body{background:radial-gradient(ellipse at 12% 0%,#e4f2f1 0,transparent 34%),lin
 .shift-report-filters button:disabled{opacity:.45;cursor:not-allowed}
 @media(max-width:680px){.shift-report-filters{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.shift-report-filters button{width:100%}}
 @media(max-width:380px){.shift-report-filters{grid-template-columns:1fr}}
+
+
+/* Manager analytics charts */
+.shift-analytics-grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:12px;margin:0 0 17px}
+.shift-chart-card{min-width:0;padding:14px;border:1px solid #e3eceb;border-radius:15px;background:linear-gradient(145deg,#fff,#f8fbfa);box-shadow:0 5px 16px #234c5808}
+.shift-chart-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:13px}
+.shift-chart-heading strong{font-size:11px;color:#315b65}
+.shift-chart-heading span{font-size:9px;color:#8a9da0}
+.shift-daily-chart{display:flex;align-items:flex-end;gap:5px;min-height:145px;padding:8px 2px 0;overflow-x:auto;border-bottom:1px solid #e6eeee}
+.shift-daily-column{display:flex;flex:1 0 17px;max-width:34px;min-width:17px;height:132px;align-items:center;justify-content:flex-end;gap:5px;flex-direction:column}
+.shift-daily-column strong{font-size:9px;color:#58777c;font-variant-numeric:tabular-nums}
+.shift-daily-column>span{display:block;width:70%;min-height:4px;border-radius:6px 6px 2px 2px;background:linear-gradient(180deg,#56b5a0,#31877d);box-shadow:0 3px 7px #31877d25}
+.shift-daily-column small{font-size:8px;color:#80969a}
+.shift-chart-empty{margin:0;padding:25px 5px;text-align:center;color:#8a9da0;font-size:10px}
+.shift-employee-bars{display:grid;gap:13px}
+.shift-employee-bar{display:grid;gap:6px}
+.shift-employee-bar>div{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:10px;color:#607b80}
+.shift-employee-bar>div span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.shift-employee-bar>div b{color:#287d70;font-variant-numeric:tabular-nums}
+.shift-employee-track{display:block;height:8px;overflow:hidden;border-radius:20px;background:#edf3f2}
+.shift-employee-track i{display:block;height:100%;border-radius:20px;background:linear-gradient(90deg,#8bcfc0,#348b80)}
+@media(max-width:700px){.shift-analytics-grid{grid-template-columns:1fr}.shift-daily-chart{min-height:125px}.shift-daily-column{height:112px}}
