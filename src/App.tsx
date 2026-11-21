@@ -958,7 +958,7 @@ function App() {
         if (reportAudio.size > 10 * 1024 * 1024) throw new Error('حجم فایل صوتی بیش از ۱۰ مگابایت است.')
         const extension = reportAudio.type.includes('mp4') ? 'mp4' : reportAudio.type.includes('ogg') ? 'ogg' : 'webm'
         uploadedPath = profile.id + '/' + crypto.randomUUID() + '.' + extension
-        const { error: uploadError } = await supabase.storage.from('staff-report-audio').upload(uploadedPath, reportAudio, { contentType: reportAudio.type || 'audio/webm', upsert: false })
+        const { error: uploadError } = await supabase.storage.from('staff-report-audio').upload(uploadedPath, reportAudio, { contentType: (reportAudio.type || 'audio/webm').split(';')[0], upsert: false })
         if (uploadError) throw new Error('بارگذاری فایل صوتی انجام نشد؛ Migration ذخیره‌سازی صوتی را اجرا کنید.')
       }
       const { data, error: insertError } = await supabase.from('staff_reports').insert({
