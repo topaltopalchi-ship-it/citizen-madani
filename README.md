@@ -76,10 +76,12 @@ where id = '<AUTH_USER_UUID>';
 1. نصب Supabase CLI مطابق مستندات رسمی
 2. اجرای `supabase start`
 3. اجرای `supabase db reset` برای ساخت دیتابیس تمیز و اعمال همه Migrationها
-4. اجرای `supabase test db` برای آزمون جابه‌جایی واقعی دو شیفت هم‌نوع و بررسی Constraint و هویت مدیر
-5. در پایان اجرای `supabase stop --no-backup`
+4. اجرای `supabase db lint --fail-on error` برای بررسی خطاهای توابع و ساختار PostgreSQL
+5. اجرای `supabase db advisors --type security --fail-on error` برای بررسی ایرادهای امنیتی سطح خطا
+6. اجرای `supabase test db` برای آزمون جابه‌جایی واقعی دو شیفت هم‌نوع و بررسی Constraint و هویت مدیر
+7. در پایان اجرای `supabase stop --no-backup`
 
-GitHub Actions این مراحل را در job جداگانه `database-integration` اجرا می‌کند. این آزمون‌ها روی دیتابیس محلی و موقت CI هستند و هیچ تغییری در پروژه Supabase عملیاتی ایجاد نمی‌کنند.
+GitHub Actions این مراحل را در job جداگانه `database-integration` اجرا می‌کند؛ lint و security advisor در CI فقط در سطح خطا باعث شکست job می‌شوند. این آزمون‌ها روی دیتابیس محلی و موقت CI هستند و هیچ تغییری در پروژه Supabase عملیاتی ایجاد نمی‌کنند.
 
 ## دستورات
 - `npm run dev` — اجرای محیط توسعه
