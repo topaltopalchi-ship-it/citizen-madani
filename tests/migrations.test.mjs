@@ -170,3 +170,14 @@ test('global sign-out revokes all Supabase sessions from profile security settin
   assert.match(app, /خروج از همه دستگاه‌ها/);
   assert.match(app, /خروج از این دستگاه/);
 });
+
+
+test('profile displays account identity, role, organization, and active status', async () => {
+  const app = await readFile(new URL('../src/App.tsx', import.meta.url), 'utf8');
+  assert.match(app, /اطلاعات حساب/);
+  assert.match(app, /مدیر سامانه/);
+  assert.match(app, /profile\?\.department \|\| 'ثبت نشده'/);
+  assert.match(app, /profile\?\.job_title \|\| 'ثبت نشده'/);
+  assert.match(app, /profile\?\.is_active === false/);
+  assert.match(app, /profile-details-grid/);
+});
