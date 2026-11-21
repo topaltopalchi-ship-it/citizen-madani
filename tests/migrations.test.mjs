@@ -254,6 +254,11 @@ test('admin audit log supports local search, entity filters, and filtered CSV ex
   assert.match(app, /const \[auditQuery, setAuditQuery\]/);
   assert.match(app, /const \[auditActionFilter, setAuditActionFilter\]/);
   assert.match(app, /const filteredAuditEntries = useMemo/);
+  assert.match(app, /auditDateFrom/);
+  assert.match(app, /auditDateTo/);
+  assert.match(app, /entryDate >= auditDateFrom/);
+  assert.match(app, /entryDate <= auditDateTo/);
+  assert.match(app, /پاک‌کردن فیلترها/);
   assert.match(app, /filteredAuditEntries\.forEach\(entry => rows\.push/);
   assert.match(app, /citizen-madani-admin-audit\.csv/);
   assert.match(app, /جست‌وجوی سجل فعالیت‌ها/);
