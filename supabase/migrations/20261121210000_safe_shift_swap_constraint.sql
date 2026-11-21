@@ -1,8 +1,14 @@
 -- Make two-person shift swaps atomic even when both shifts occupy the
 -- same date/type slot, and acquire row locks in a stable order.
 
+-- PostgreSQL only allows ALTER CONSTRAINT deferrability changes for foreign
+-- keys. Replace this UNIQUE constraint so it can be deferred during a swap.
 alter table public.work_shifts
-  alter constraint work_shift_employee_slot_unique
+  drop constraint work_shift_employee_slot_unique;
+
+alter table public.work_shifts
+  add constraint work_shift_employee_slot_unique
+  unique (employee_id, shift_date, shift_type)
   deferrable initially immediate;
 
 create or replace function public.apply_citizen_madani_shift_swap()
