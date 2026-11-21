@@ -361,7 +361,7 @@ test('salary, karaneh, and overtime updates are published only by administrators
   assert.match(app, /staff-report-audio/);
   assert.match(app, /from\('staff_reports'\)\.insert/);
   assert.match(app, /playStaffReportAudio/);
-  assert.match(app, /reviewStaffReport/);
+  assert.match(app, /reviewStaffReport/);\n  assert.match(app, /saveStaffReportResponse/);\n  assert.match(app, /admin_response: response/);
   assert.match(app, /گزارش فقط برای شما و مدیران مجاز قابل مشاهده است/);
   assert.match(css, /\.staff-report-form/);
   assert.match(css, /\.report-audio-preview/);
