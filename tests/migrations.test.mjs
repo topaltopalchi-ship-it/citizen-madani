@@ -90,3 +90,12 @@ test('private message attachment picker enforces count, size and type before upl
   assert.match(app, /picked\.some\(file => !allowed\.includes\(file\.type\) \|\| file\.size === 0\)/);
   assert.match(app, /setMessageAttachments\(next\)/);
 });
+
+test('replayed realtime message inserts do not duplicate inbox unread counts', async () => {
+  const app = await readFile(new URL('../src/App.tsx', import.meta.url), 'utf8');
+  assert.match(app, /const seenIncomingMessageIds = useRef\(new Set<string>\(\)\)/);
+  assert.match(app, /seenIncomingMessageIds\.current\.has\(incoming\.id\)/);
+  assert.match(app, /seenIncomingMessageIds\.current\.add\(incoming\.id\)/);
+  assert.match(app, /loadedInbox\.forEach\(item => \{ if \(item\.recipient_id === userId\) seenIncomingMessageIds\.current\.add\(item\.id\) \}\)/);
+  assert.match(app, /seenIncomingMessageIds\.current\.clear\(\)/);
+});
