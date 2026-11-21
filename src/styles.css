@@ -511,3 +511,11 @@ body{background:radial-gradient(ellipse at 12% 0%,#e4f2f1 0,transparent 34%),lin
 .message-delete-btn:hover{background:linear-gradient(145deg,#fff1ee,#ffe5e0);border-color:#e9bdb5}
 .message-delete-btn:disabled{opacity:.5;cursor:not-allowed}
 .message-deleted-text{color:#89999a;font-style:italic}
+
+
+/* Search within the active private conversation */
+.chat-heading{gap:12px;flex-wrap:wrap}
+.thread-search{display:flex;align-items:center;gap:7px;min-width:min(100%,220px);max-width:310px;flex:1;padding:8px 11px;border:1px solid #e4eaf2;border-radius:13px;background:linear-gradient(145deg,#fff,#f5f8fc);color:#8291a5;box-shadow:inset 0 1px 2px #14243a08,0 3px 9px #14243a08}
+.thread-search input{width:100%;min-width:0;border:0;outline:0;background:transparent;color:#27384e;font:inherit;font-size:11px}
+.thread-search input::placeholder{color:#9ba8b8}
+.thread-search button{display:grid;place-items:center;width:22px;height:22px;border:0;border-radius:7px;background:#e9eef5;color:#53657c;font-size:17px;cursor:pointer}
