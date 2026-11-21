@@ -100,6 +100,15 @@ function App() {
     const [year, month] = shift.shift_date.split('-').map(Number)
     return year === calendarMonth.getFullYear() && month === calendarMonth.getMonth() + 1
   }), [calendarMonth, workShifts])
+  const monthlyShiftStats = useMemo(() => ({
+    total: calendarMonthShifts.length,
+    morning: calendarMonthShifts.filter(shift => shift.shift_type === 'morning').length,
+    evening: calendarMonthShifts.filter(shift => shift.shift_type === 'evening').length,
+    night: calendarMonthShifts.filter(shift => shift.shift_type === 'night').length,
+    employees: new Set(calendarMonthShifts.map(shift => shift.employee_id)).size,
+    departments: [...calendarMonthShifts.reduce((map, shift) => map.set(shift.department, (map.get(shift.department) || 0) + 1), new Map<string, number>())]
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'fa')),
+  }), [calendarMonthShifts])
   const exportShiftCalendar = () => {
     const rows = [['تاریخ', 'نام کارمند', 'بخش', 'نوع شیفت', 'ساعت شروع', 'ساعت پایان', 'توضیحات']]
     calendarMonthShifts.forEach(shift => rows.push([
@@ -490,6 +499,13 @@ function App() {
                  <button type="button" className="primary-btn calendar-export" onClick={exportShiftCalendar} disabled={calendarMonthShifts.length === 0}>خروجی Excel</button>
                </div>
              </div>
+             <div className="shift-month-summary" aria-label="گزارش آماری شیفت‌های ماه">
+               <div className="shift-summary-total"><span>مجموع شیفت‌ها</span><strong>{monthlyShiftStats.total}</strong><small>{monthlyShiftStats.employees} کارمند برنامه‌ریزی‌شده</small></div>
+               <div className="shift-summary-item morning"><span>شیفت صبح</span><strong>{monthlyShiftStats.morning}</strong></div>
+               <div className="shift-summary-item evening"><span>شیفت عصر</span><strong>{monthlyShiftStats.evening}</strong></div>
+               <div className="shift-summary-item night"><span>شیفت شب</span><strong>{monthlyShiftStats.night}</strong></div>
+             </div>
+             {monthlyShiftStats.departments.length > 0 && <div className="shift-department-report"><strong>توزیع شیفت بر اساس بخش</strong><div>{monthlyShiftStats.departments.map(([department, count]) => <span key={department}>{department}<b>{count}</b></span>)}</div></div>}
              <div className="shift-calendar-grid shift-calendar-weekdays">{['شنبه','یکشنبه','دوشنبه','سه‌شنبه','چهارشنبه','پنجشنبه','جمعه'].map(day => <div key={day}>{day}</div>)}</div>
              <div className="shift-calendar-grid shift-calendar-days">{calendarCells.map((cell, index) => cell ? <div className={'shift-calendar-day' + (cell.key === dateKey(new Date()) ? ' today' : '')} key={cell.key}>
                <strong>{cell.date.toLocaleDateString('fa-IR', { day: 'numeric' })}</strong>
