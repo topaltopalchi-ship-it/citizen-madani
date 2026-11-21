@@ -395,3 +395,14 @@ body{background:radial-gradient(ellipse at 12% 0%,#e4f2f1 0,transparent 34%),lin
 .shift-department-report span{display:flex;align-items:center;gap:8px;padding:6px 9px;border-radius:9px;background:#f2f7f7;color:#627d82;font-size:10px}
 .shift-department-report b{color:#27796f;font-size:11px}
 @media(max-width:600px){.shift-month-summary{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.shift-month-summary>div{padding:10px}.shift-month-summary strong{font-size:21px}}
+
+
+/* Shift report filtering controls */
+.shift-report-filters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) auto;align-items:end;gap:9px;margin:0 0 13px;padding:12px;border:1px solid #e3eceb;border-radius:14px;background:linear-gradient(145deg,#fff,#f6faf9)}
+.shift-report-filters label{display:grid;gap:6px;min-width:0;color:#607b80;font-size:10px;font-weight:800}
+.shift-report-filters select{width:100%;min-width:0;height:38px;padding:0 9px;border:1px solid #dce8e7;border-radius:10px;background:#fff;color:#315b65;font:inherit;font-size:10px;outline:none}
+.shift-report-filters select:focus{border-color:#60a69d;box-shadow:0 0 0 3px #60a69d1c}
+.shift-report-filters button{min-height:38px;white-space:nowrap;font-size:10px}
+.shift-report-filters button:disabled{opacity:.45;cursor:not-allowed}
+@media(max-width:680px){.shift-report-filters{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.shift-report-filters button{width:100%}}
+@media(max-width:380px){.shift-report-filters{grid-template-columns:1fr}}
