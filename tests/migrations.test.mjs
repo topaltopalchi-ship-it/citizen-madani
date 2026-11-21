@@ -78,8 +78,7 @@ test('shift scheduling defaults and past-date validation use the browser local c
   assert.match(app, /min=\{dateKey\(new Date\(\)\)\}/);
   assert.doesNotMatch(app, /new Date\(\)\.toISOString\(\)\.slice\(0, 10\)/);
   assert.match(app, /gte\('shift_date', dateKey\(new Date\(new Date\(\)\.getFullYear\(\) - 1, new Date\(\)\.getMonth\(\), 1\)\)\)\.lte\('shift_date', dateKey\(new Date\(new Date\(\)\.getFullYear\(\) \+ 1, new Date\(\)\.getMonth\(\) \+ 1, 0\)\)\)/);
-  assert.doesNotMatch(app, /shift_date'[^
-]*toISOString\(\)/);
+  assert.doesNotMatch(app, /shift_date'[^\\n]*toISOString\(\)/);
 });
 
 
