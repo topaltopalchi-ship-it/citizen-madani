@@ -755,3 +755,11 @@ body{background:radial-gradient(ellipse at 12% 0%,#e4f2f1 0,transparent 34%),lin
 .audit-date-filter input{width:100%;min-height:36px;padding:7px 9px;border:1px solid #dce8e5;border-radius:10px;background:#fff;color:#365d61;font:inherit}
 .audit-date-filter input:focus{outline:2px solid #329b8c55;border-color:#329b8c}
 @media(max-width:560px){.employee-admin-toolbar .audit-date-filter{width:100%}.employee-admin-toolbar .audit-date-filter input{width:100%}}
+
+.shift-six-month-card{margin:0 0 16px}
+.shift-six-month-chart{height:150px;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));align-items:end;gap:clamp(8px,3vw,24px);padding:14px 10px 0;border-bottom:1px solid #e5eeeb}
+.shift-six-month-column{height:100%;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:7px}
+.shift-six-month-column strong{font-size:12px;color:#426b68;font-variant-numeric:tabular-nums}
+.shift-six-month-column>span{width:min(34px,65%);min-height:4px;border-radius:8px 8px 2px 2px;background:linear-gradient(180deg,#54b7a4,#398d87);transition:height .2s ease}
+.shift-six-month-column small{font-size:10px;color:#718985;white-space:nowrap}
+@media(max-width:520px){.shift-six-month-chart{height:128px;gap:5px;padding-inline:2px}.shift-six-month-column>span{width:55%}.shift-six-month-column small{font-size:9px}}
