@@ -303,3 +303,13 @@ body{background:radial-gradient(ellipse at 12% 0%,#e4f2f1 0,transparent 34%),lin
 
 .account-disabled-notice{border-color:#f0d5ca;background:linear-gradient(135deg,#fff8f4,#fffdfb)}
 .account-disabled-notice .notice-icon{background:#fff0e8;color:#b86d4e}
+
+
+/* Administrative audit timeline */
+.audit-row{display:grid;grid-template-columns:auto minmax(0,1fr) minmax(130px,auto);align-items:center;gap:13px;padding:14px 10px;border-bottom:1px solid #edf2f2}
+.audit-row:last-child{border-bottom:0}
+.audit-row .request-info{display:grid;gap:4px}
+.audit-row .request-info strong{color:#234b58;font-size:12px}
+.audit-row .request-info span,.audit-row .request-info small{font-size:10px;color:#80949a;line-height:1.8;overflow-wrap:anywhere}
+.audit-row time{font-size:10px;color:#789198;direction:rtl;text-align:left;white-space:nowrap}
+@media(max-width:600px){.audit-row{grid-template-columns:auto minmax(0,1fr);gap:9px}.audit-row time{grid-column:2;justify-self:start}.audit-row .request-symbol{width:36px;height:36px}}
