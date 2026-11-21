@@ -3,7 +3,7 @@ import { Activity, ArrowLeftRight, Bell, Building2, CalendarDays, ChevronLeft, C
 import { supabase } from './lib/supabase'
 
 type Page = 'خانه' | 'همکاران' | 'درخواست تبادل' | 'درخواست‌های من' | 'پروفایل' | 'مدیریت درخواست‌ها'
-type Profile = { id: string; display_name: string; department: string | null; job_title: string | null; role: string }
+type Profile = { id: string; display_name: string; department: string | null; job_title: string | null; role?: string }
 type ExchangeRequest = { id: string; employee_id?: string; request_type: string; from_unit: string; to_unit: string; note: string | null; status: string; created_at: string }
 
 const units = ['اورژانس', 'داخلی', 'جراحی', 'ICU', 'آزمایشگاه', 'رادیولوژی', 'داروخانه', 'پذیرش', 'سایر']
@@ -55,13 +55,14 @@ function App() {
 
   useEffect(() => {
     if (!supabase || !userEmail) return
+    const client = supabase
     let active = true
     const load = async () => {
-      const { data: userData } = await supabase.auth.getUser()
+      const { data: userData } = await client.auth.getUser()
       const userId = userData.user?.id
       if (!userId) return
       const [profileResult, peopleResult, requestResult] = await Promise.all([
-        supabase.from('employee_profiles').select('id,display_name,department,job_title,role').eq('id', userId).maybeSingle(),
+        client.from('employee_profiles').select('id,display_name,department,job_title,role').eq('id', userId).maybeSingle(),
         supabase.from('employee_profiles').select('id,display_name,department,job_title').eq('is_active', true).order('display_name'),
         supabase.from('exchange_requests').select('id,employee_id,request_type,from_unit,to_unit,note,status,created_at').order('created_at', { ascending: false }),
       ])
