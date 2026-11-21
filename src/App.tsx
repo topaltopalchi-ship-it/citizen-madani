@@ -90,6 +90,7 @@ function App() {
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
+  const [transferStatus, setTransferStatus] = useState<{ stage: 'upload' | 'save' | 'cleanup'; current: number; total: number } | null>(null)
 
   const configured = Boolean(supabase)
   const isAdmin = profile?.role === 'admin'
@@ -535,20 +536,29 @@ function App() {
     e.preventDefault()
     if (!supabase || !profile || !selectedContact || (!messageDraft.trim() && !messageAttachments.length)) return
     const allowedTypes = ['image/jpeg','image/png','image/webp','image/gif','application/pdf','text/plain','application/vnd.openxmlformats-officedocument.wordprocessingml.document','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']
-    const totalSize = messageAttachments.reduce((sum, file) => sum + file.size, 0)
-    if (messageAttachments.length > 5 || totalSize > 10 * 1024 * 1024 || messageAttachments.some(file => file.size === 0 || !allowedTypes.includes(file.type))) {
+    const filesToSend = [...messageAttachments]
+    const totalSize = filesToSend.reduce((sum, file) => sum + file.size, 0)
+    if (filesToSend.length > 5 || totalSize > 10 * 1024 * 1024 || filesToSend.some(file => file.size === 0 || !allowedTypes.includes(file.type))) {
       setError('حداکثر ۵ فایل با مجموع حجم ۱۰ مگابایت مجاز است؛ نوع فایل‌ها را نیز بررسی کنید.'); return
     }
-    setBusy(true); setError(''); setMessage('در حال بارگذاری پیوست‌ها...')
+    setBusy(true); setError(''); setMessage('')
+    setTransferStatus(filesToSend.length ? { stage: 'upload', current: 0, total: filesToSend.length } : { stage: 'save', current: 0, total: 0 })
     const uploaded: MessageAttachment[] = []
+    let failureStage: 'upload' | 'save' = filesToSend.length ? 'upload' : 'save'
     try {
-      for (const file of messageAttachments) {
+      for (let index = 0; index < filesToSend.length; index += 1) {
+        const file = filesToSend[index]
+        setMessage('در حال بارگذاری فایل ' + (index + 1) + ' از ' + filesToSend.length + ': ' + file.name)
         const safeName = file.name.normalize('NFKC').replace(/[^\p{L}\p{N}._-]/gu, '_').slice(-100) || 'attachment'
         const path = profile.id + '/' + selectedContact.id + '/' + crypto.randomUUID() + '-' + safeName
         const { error: uploadError } = await supabase.storage.from('employee-message-attachments').upload(path, file, { contentType: file.type, upsert: false })
         if (uploadError) throw new Error('upload')
         uploaded.push({ path, name: file.name, type: file.type, size: file.size })
+        setTransferStatus({ stage: 'upload', current: index + 1, total: filesToSend.length })
       }
+      failureStage = 'save'
+      setTransferStatus({ stage: 'save', current: filesToSend.length, total: filesToSend.length })
+      setMessage('فایل‌ها بارگذاری شدند؛ در حال ثبت پیام...')
       const first = uploaded[0]
       const { data, error: sendError } = await supabase.from('direct_messages').insert({
         sender_id: profile.id, recipient_id: selectedContact.id, body: messageDraft.trim(), attachments: uploaded,
@@ -559,10 +569,21 @@ function App() {
       setThreadMessages(current => [...current, data as DirectMessage])
       setInboxMessages(current => [data as DirectMessage, ...current.filter(m => m.id !== data.id)])
       setMessageDraft(''); setMessageAttachments([]); setMessage('پیام و پیوست‌ها با موفقیت ارسال شدند.')
+      setTransferStatus(null)
     } catch {
-      if (uploaded.length) await supabase.storage.from('employee-message-attachments').remove(uploaded.map(file => file.path))
-      setError('ارسال پیام کامل نشد؛ فایل‌های موقت پاک‌سازی شدند. اتصال و دسترسی ذخیره‌سازی را بررسی کنید.')
+      let cleanupFailed = false
+      if (uploaded.length) {
+        setTransferStatus({ stage: 'cleanup', current: uploaded.length, total: uploaded.length })
+        setMessage('ارسال ناموفق بود؛ در حال پاک‌سازی فایل‌های موقت...')
+        const { error: cleanupError } = await supabase.storage.from('employee-message-attachments').remove(uploaded.map(file => file.path))
+        cleanupFailed = Boolean(cleanupError)
+      }
+      const stageMessage = failureStage === 'upload' ? 'بارگذاری یکی از فایل‌ها ناموفق بود.' : 'ثبت پیام در پایگاه داده ناموفق بود.'
+      setError(cleanupFailed
+        ? stageMessage + ' پاک‌سازی بعضی فایل‌های موقت نیز انجام نشد؛ فضای ذخیره‌سازی باید بررسی شود.'
+        : stageMessage + (uploaded.length ? ' فایل‌های بارگذاری‌شده پاک‌سازی شدند.' : ' دوباره تلاش کنید.'))
       setMessage('')
+      setTransferStatus(null)
     } finally { setBusy(false) }
   }
 
