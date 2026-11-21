@@ -555,3 +555,16 @@ body{background:radial-gradient(ellipse at 12% 0%,#e4f2f1 0,transparent 34%),lin
 .attachment-file-fallback small{color:#80939a}
 .attachment-download-btn{margin-top:5px;text-decoration:none;box-shadow:0 5px 0 #0b5559,0 8px 16px #126b7033;transition:transform .15s,box-shadow .15s}
 .attachment-download-btn:hover{transform:translateY(-2px);box-shadow:0 7px 0 #0b5559,0 11px 18px #126b7033}
+
+
+/* Safe, bounded Excel attachment preview */
+.excel-preview{display:flex;flex-direction:column;gap:10px;min-height:220px;min-width:0}
+.excel-preview-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;color:#365d61;font-size:11px}
+.excel-preview-toolbar span,.excel-preview-note{color:#74898e;font-size:10px}
+.excel-preview-scroll{max-height:min(58vh,560px);overflow:auto;border:1px solid #dce8e5;border-radius:12px;background:#fff}
+.excel-preview table{width:max-content;min-width:100%;border-collapse:separate;border-spacing:0;font-size:11px;text-align:right}
+.excel-preview th,.excel-preview td{max-width:260px;min-width:90px;padding:9px 11px;border-bottom:1px solid #edf1ef;border-left:1px solid #edf1ef;white-space:pre-wrap;overflow-wrap:anywhere;vertical-align:top}
+.excel-preview th{position:sticky;top:0;z-index:1;background:#eaf5f1;color:#245e58;font-weight:900}
+.excel-preview tr:nth-child(even) td{background:#f8fbfa}
+.excel-preview-note{line-height:1.8}
+@media(max-width:600px){.excel-preview th,.excel-preview td{min-width:78px;max-width:180px;padding:7px;font-size:10px}}
