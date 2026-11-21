@@ -164,6 +164,40 @@ function App() {
     }).length
     return { key: `${year}-${String(month).padStart(2, '0')}`, label: monthDate.toLocaleDateString('fa-IR', { month: 'short' }), count }
   }), [calendarMonth, workShifts, reportDepartment, reportShiftType, reportEmployee])
+  const monthOverMonthComparison = useMemo(() => {
+    const currentDate = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1)
+    const previousDate = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1)
+    const currentKey = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`
+    const previousKey = `${previousDate.getFullYear()}-${String(previousDate.getMonth() + 1).padStart(2, '0')}`
+    const matchesMonth = (shift: WorkShift, key: string) => shift.shift_date.slice(0, 7) === key
+    const matchesFilters = (shift: WorkShift) =>
+      (reportDepartment === 'all' || shift.department === reportDepartment) &&
+      (reportShiftType === 'all' || shift.shift_type === reportShiftType) &&
+      (reportEmployee === 'all' || shift.employee_id === reportEmployee)
+    const departmentNames = [...new Set(workShifts.map(shift => shift.department).filter(Boolean))]
+    const departments = departmentNames.map(name => ({
+      name,
+      previous: workShifts.filter(shift => matchesMonth(shift, previousKey) && matchesFilters(shift) && shift.department === name).length,
+      current: workShifts.filter(shift => matchesMonth(shift, currentKey) && matchesFilters(shift) && shift.department === name).length,
+    })).filter(item => item.previous > 0 || item.current > 0)
+      .sort((left, right) => right.current - left.current || right.previous - left.previous || left.name.localeCompare(right.name, 'fa'))
+    const employees = colleagues.filter(person => person.is_active !== false)
+      .filter(person => reportDepartment === 'all' || person.department === reportDepartment)
+      .filter(person => reportEmployee === 'all' || person.id === reportEmployee)
+      .map(person => ({
+        id: person.id,
+        name: person.display_name,
+        previous: workShifts.filter(shift => matchesMonth(shift, previousKey) && matchesFilters(shift) && shift.employee_id === person.id).length,
+        current: workShifts.filter(shift => matchesMonth(shift, currentKey) && matchesFilters(shift) && shift.employee_id === person.id).length,
+      })).filter(item => item.previous > 0 || item.current > 0)
+      .sort((left, right) => right.current - left.current || right.previous - left.previous || left.name.localeCompare(right.name, 'fa'))
+    return {
+      currentLabel: currentDate.toLocaleDateString('fa-IR', { month: 'long' }),
+      previousLabel: previousDate.toLocaleDateString('fa-IR', { month: 'long' }),
+      departments: departments.slice(0, 5),
+      employees: employees.slice(0, 5),
+    }
+  }, [calendarMonth, workShifts, colleagues, reportDepartment, reportShiftType, reportEmployee])
   const reportDepartments = useMemo(() => [...new Set(calendarMonthShifts.map(shift => shift.department))].sort((a, b) => a.localeCompare(b, 'fa')), [calendarMonthShifts])
   const reportEmployees = useMemo(() => [...new Set(calendarMonthShifts.map(shift => shift.employee_id))]
     .map(id => colleagues.find(person => person.id === id)).filter((person): person is Profile => Boolean(person))
@@ -1038,6 +1072,24 @@ function App() {
                    </div>
                  })}
                </div>
+             </section>
+             <section className="shift-chart-card shift-month-compare" aria-label="مقایسه شیفت‌ها با ماه قبل">
+               <div className="shift-chart-heading"><strong>مقایسه با ماه قبل</strong><span>{monthOverMonthComparison.previousLabel} در برابر {monthOverMonthComparison.currentLabel}</span></div>
+               <div className="shift-compare-grid">
+                 <div className="shift-compare-group"><strong>بخش‌ها</strong>
+                   {monthOverMonthComparison.departments.length === 0 ? <p className="shift-chart-empty">داده‌ای برای مقایسه وجود ندارد.</p> : monthOverMonthComparison.departments.map(item => {
+                     const delta = item.current - item.previous
+                     return <div className="shift-compare-row" key={item.name}><span>{item.name}</span><small>{item.previous.toLocaleString('fa-IR')} ← {item.current.toLocaleString('fa-IR')}</small><b className={delta > 0 ? 'up' : delta < 0 ? 'down' : 'steady'}>{delta > 0 ? '↑ ' : delta < 0 ? '↓ ' : '• '}{Math.abs(delta).toLocaleString('fa-IR')}</b></div>
+                   })}
+                 </div>
+                 <div className="shift-compare-group"><strong>کارکنان</strong>
+                   {monthOverMonthComparison.employees.length === 0 ? <p className="shift-chart-empty">داده‌ای برای مقایسه وجود ندارد.</p> : monthOverMonthComparison.employees.map(item => {
+                     const delta = item.current - item.previous
+                     return <div className="shift-compare-row" key={item.id}><span>{item.name}</span><small>{item.previous.toLocaleString('fa-IR')} ← {item.current.toLocaleString('fa-IR')}</small><b className={delta > 0 ? 'up' : delta < 0 ? 'down' : 'steady'}>{delta > 0 ? '↑ ' : delta < 0 ? '↓ ' : '• '}{Math.abs(delta).toLocaleString('fa-IR')}</b></div>
+                   })}
+                 </div>
+               </div>
+               <p className="shift-compare-note">اعداد به‌ترتیب ماه قبل و ماه انتخاب‌شده هستند؛ علامت تغییر، اختلاف تعداد شیفت‌ها را نشان می‌دهد.</p>
              </section>
              <div className="shift-month-summary" aria-label="گزارش آماری شیفت‌های ماه">
                <div className="shift-summary-total"><span>مجموع شیفت‌ها</span><strong>{monthlyShiftStats.total}</strong><small>{monthlyShiftStats.employees} کارمند برنامه‌ریزی‌شده</small></div>
