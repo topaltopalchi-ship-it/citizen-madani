@@ -481,22 +481,22 @@ test('exchange request management reports totals, outcomes, request types, and a
 
 test('personnel cases are private to the owner and authorized admins', async () => {
   const sql = await readMigration('20261122030000_staff_personnel_cases.sql');
-  assert.match(sql, /create table if not exists public\\.personnel_cases/i);
+  assert.match(sql, /create table if not exists public\.personnel_cases/i);
   assert.match(sql, /enable row level security/i);
-  assert.match(sql, /employee_id = auth\\.uid\\(\\)/i);
-  assert.match(sql, /public\\.is_citizen_madani_active_employee\\(\\)/i);
-  assert.match(sql, /employee_id = auth\\.uid\\(\\) or public\\.is_citizen_madani_admin\\(\\)/i);
-  assert.match(sql, /create policy "Admins review personnel cases"[\\s\\S]*?reviewed_by = auth\\.uid\\(\\)/i);
+  assert.match(sql, /employee_id = auth\.uid\(\)/i);
+  assert.match(sql, /public\.is_citizen_madani_active_employee\(\)/i);
+  assert.match(sql, /employee_id = auth\.uid\(\) or public\.is_citizen_madani_admin\(\)/i);
+  assert.match(sql, /create policy "Admins review personnel cases"[\s\S]*?reviewed_by = auth\.uid\(\)/i);
   assert.match(sql, /Attachments are intentionally not supported/i);
 });
 
 
 test('personnel case audit history is append-only for authenticated clients', async () => {
   const sql = await readMigration('20261122040000_personnel_case_audit.sql');
-  assert.match(sql, /create table if not exists public\\.personnel_case_events/i);
+  assert.match(sql, /create table if not exists public\.personnel_case_events/i);
   assert.match(sql, /enable row level security/i);
-  assert.match(sql, /grant select on public\\.personnel_case_events to authenticated/i);
+  assert.match(sql, /grant select on public\.personnel_case_events to authenticated/i);
   assert.match(sql, /create policy "Case owners and admins read case history"/i);
-  assert.match(sql, /security definer[\\s\\S]*?set search_path = public/i);
-  assert.match(sql, /after insert or update of status, admin_response on public\\.personnel_cases/i);
+  assert.match(sql, /security definer[\s\S]*?set search_path = ''/i);
+  assert.match(sql, /after insert or update of status, admin_response on public\.personnel_cases/i);
 });
