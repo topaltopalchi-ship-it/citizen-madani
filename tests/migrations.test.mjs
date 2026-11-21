@@ -78,7 +78,8 @@ test('shift scheduling defaults and past-date validation use the browser local c
   assert.match(app, /min=\{dateKey\(new Date\(\)\)\}/);
   assert.doesNotMatch(app, /new Date\(\)\.toISOString\(\)\.slice\(0, 10\)/);
   assert.match(app, /gte\('shift_date', dateKey\(new Date\(new Date\(\)\.getFullYear\(\) - 1, new Date\(\)\.getMonth\(\), 1\)\)\)\.lte\('shift_date', dateKey\(new Date\(new Date\(\)\.getFullYear\(\) \+ 1, new Date\(\)\.getMonth\(\) \+ 1, 0\)\)\)/);
-  assert.doesNotMatch(app, /shift_date'[^\n]*toISOString\(\)/);
+  assert.doesNotMatch(app, /shift_date'[^
+]*toISOString\(\)/);
 });
 
 
@@ -296,7 +297,8 @@ test('admin audit log supports local search, entity filters, and filtered CSV ex
   assert.match(app, /جست‌وجوی سجل فعالیت‌ها/);
   assert.match(app, /خروجی CSV/);
   assert.ok(app.includes(String.raw`const csv = '\uFEFF'`));
-  assert.ok(app.includes(String.raw`join('\r\n')`));
+  assert.ok(app.includes(String.raw`join('\r
+')`));
 });
 
 
@@ -322,37 +324,40 @@ test('salary, karaneh, and overtime updates are published only by administrators
   assert.match(migration, /created_by = auth\.uid\(\)/);
 });
 
-\ntest('employee welfare agreements are admin-managed and only current published offers are visible', async () => {
+
+test('employee welfare agreements are admin-managed and only current published offers are visible', async () => {
   const migration = await readMigration('20261122000000_staff_welfare_partners.sql');
-  assert.match(migration, /create table if not exists public\\.welfare_partners/);
+  assert.match(migration, /create table if not exists public\.welfare_partners/);
   assert.match(migration, /'sports', 'shopping', 'food', 'health', 'travel', 'education', 'services', 'other'/);
   assert.match(migration, /'discount', 'installment', 'special_price', 'other'/);
   assert.match(migration, /discount_percent between 0 and 100/);
   assert.match(migration, /benefit_type <> 'installment' or installment_terms is not null/);
-  assert.match(migration, /status = 'published'[\\s\\S]*?starts_at is null or starts_at <= now\\(\\)/);
-  assert.match(migration, /ends_at is null or ends_at > now\\(\\)/);
-  assert.match(migration, /public\\.is_citizen_madani_active_employee\\(\\)/);
+  assert.match(migration, /status = 'published'[\s\S]*?starts_at is null or starts_at <= now\(\)/);
+  assert.match(migration, /ends_at is null or ends_at > now\(\)/);
+  assert.match(migration, /public\.is_citizen_madani_active_employee\(\)/);
   assert.match(migration, /Admins manage welfare partners/);
-  assert.match(migration, /created_by = auth\\.uid\\(\\)/);
-  assert.match(migration, /alter table public\\.welfare_partners enable row level security/);
+  assert.match(migration, /created_by = auth\.uid\(\)/);
+  assert.match(migration, /alter table public\.welfare_partners enable row level security/);
 });
 
-\ntest('staff error and experience reports are private and optional audio is stored in a restricted bucket', async () => {
+
+test('staff error and experience reports are private and optional audio is stored in a restricted bucket', async () => {
   const migration = await readMigration('20261122010000_staff_reports_and_audio.sql');
-  assert.match(migration, /create table if not exists public\\.staff_reports/);
+  assert.match(migration, /create table if not exists public\.staff_reports/);
   assert.match(migration, /'error', 'experience'/);
-  assert.match(migration, /reporter_id = auth\\.uid\\(\\)/);
-  assert.match(migration, /reporter_id = auth\\.uid\\(\\) or public\\.is_citizen_madani_admin\\(\\)/);
+  assert.match(migration, /reporter_id = auth\.uid\(\)/);
+  assert.match(migration, /reporter_id = auth\.uid\(\) or public\.is_citizen_madani_admin\(\)/);
   assert.match(migration, /Admins review staff reports/);
   assert.match(migration, /create policy "Employees upload own report audio"/);
   assert.match(migration, /bucket_id = 'staff-report-audio'/);
   assert.match(migration, /public = false/);
   assert.match(migration, /file_size_limit = 10485760/);
   assert.match(migration, /Report owners and admins read report audio/);
-  assert.match(migration, /not exists \(select 1 from public\\.staff_reports r where r\\.audio_path = storage\\.objects\\.name\)/);
+  assert.match(migration, /not exists \(select 1 from public\.staff_reports r where r\.audio_path = storage\.objects\.name\)/);
 });
 
-\ntest('staff report page supports private text and audio submissions with admin review', async () => {
+
+test('staff report page supports private text and audio submissions with admin review', async () => {
   const app = await readFile(new URL('../src/App.tsx', import.meta.url), 'utf8');
   const css = await readFile(new URL('../src/styles.css', import.meta.url), 'utf8');
   assert.match(app, /page === 'ثبت خطا و تجربه'/);
@@ -361,7 +366,9 @@ test('salary, karaneh, and overtime updates are published only by administrators
   assert.match(app, /staff-report-audio/);
   assert.match(app, /from\('staff_reports'\)\.insert/);
   assert.match(app, /playStaffReportAudio/);
-  assert.match(app, /reviewStaffReport/);\n  assert.match(app, /saveStaffReportResponse/);\n  assert.match(app, /admin_response: response/);
+  assert.match(app, /reviewStaffReport/);
+  assert.match(app, /saveStaffReportResponse/);
+  assert.match(app, /admin_response: response/);
   assert.match(app, /گزارش فقط برای شما و مدیران مجاز قابل مشاهده است/);
   assert.match(css, /\.staff-report-form/);
   assert.match(css, /\.report-audio-preview/);
