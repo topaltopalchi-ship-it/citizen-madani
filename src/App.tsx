@@ -51,6 +51,7 @@ function App() {
   const [contactFilter, setContactFilter] = useState<'all' | 'unread' | 'messaged' | 'new'>('all')
   const [threadQuery, setThreadQuery] = useState('')
   const threadLoadSequence = useRef(0)
+  const seenIncomingMessageIds = useRef(new Set<string>())
   const [messageDraft, setMessageDraft] = useState('')
   const [messageAttachments, setMessageAttachments] = useState<File[]>([])
   const messageAttachmentPreviews = useMemo(() => messageAttachments.map(file => ({
@@ -262,7 +263,7 @@ function App() {
     })
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       setUserEmail(session?.user.email ?? null)
-      if (!session) { setProfile(null); setRequests([]); setSelectedContact(null); setThreadMessages([]); setInboxMessages([]); setMessageDraft(''); setUnreadCount(0); threadLoadSequence.current += 1; setThreadLoading(false) }
+      if (!session) { setProfile(null); setRequests([]); setSelectedContact(null); setThreadMessages([]); setInboxMessages([]); seenIncomingMessageIds.current.clear(); setMessageDraft(''); setUnreadCount(0); threadLoadSequence.current += 1; setThreadLoading(false) }
     })
     return () => listener.subscription.unsubscribe()
   }, [])
@@ -307,7 +308,14 @@ function App() {
         client.from('direct_messages').select('id', { count: 'exact', head: true }).eq('recipient_id', userId).is('read_at', null).is('deleted_at', null),
         client.from('direct_messages').select('id,sender_id,recipient_id,body,created_at,read_at,attachment_path,attachment_name,attachment_type,attachment_size,attachments,deleted_at').or(`sender_id.eq.${userId},recipient_id.eq.${userId}`).order('created_at', { ascending: false }).limit(300),
       ])
-      if (active) { setUnreadCount(count ?? 0); if (inboxResult.data) setInboxMessages(inboxResult.data as DirectMessage[]) }
+      if (active) {
+        setUnreadCount(count ?? 0)
+        if (inboxResult.data) {
+          const loadedInbox = inboxResult.data as DirectMessage[]
+          loadedInbox.forEach(item => { if (item.recipient_id === userId) seenIncomingMessageIds.current.add(item.id) })
+          setInboxMessages(loadedInbox)
+        }
+      }
       const ids = [...new Set((requestResult.data ?? []).map((r: any) => r.employee_id))]
       if (ids.length) {
         const { data: names } = await client.from('employee_profiles').select('id,display_name').in('id', ids)
@@ -327,6 +335,9 @@ function App() {
         filter: `recipient_id=eq.${profile.id}`,
       }, payload => {
         const incoming = payload.new as DirectMessage
+        // Realtime may replay INSERT events after reconnect; count each message only once.
+        if (seenIncomingMessageIds.current.has(incoming.id)) return
+        seenIncomingMessageIds.current.add(incoming.id)
         if (selectedContact?.id === incoming.sender_id) {
           setThreadMessages(current => current.some(m => m.id === incoming.id) ? current : [...current, incoming])
           setInboxMessages(current => [incoming, ...current.filter(m => m.id !== incoming.id)])
