@@ -80,3 +80,13 @@ test('shift scheduling defaults and past-date validation use the browser local c
   assert.match(app, /gte\('shift_date', dateKey\(new Date\(new Date\(\)\.getFullYear\(\) - 1, new Date\(\)\.getMonth\(\), 1\)\)\)\.lte\('shift_date', dateKey\(new Date\(new Date\(\)\.getFullYear\(\) \+ 1, new Date\(\)\.getMonth\(\) \+ 1, 0\)\)\)/);
   assert.doesNotMatch(app, /shift_date'[^\n]*toISOString\(\)/);
 });
+
+
+test('private message attachment picker enforces count, size and type before upload', async () => {
+  const app = await readFile(new URL('../src/App.tsx', import.meta.url), 'utf8');
+  assert.match(app, /const next = \[\.\.\.messageAttachments, \.\.\.picked\]/);
+  assert.match(app, /if \(next\.length > 5\)/);
+  assert.match(app, /total > 10 \* 1024 \* 1024/);
+  assert.match(app, /picked\.some\(file => !allowed\.includes\(file\.type\) \|\| file\.size === 0\)/);
+  assert.match(app, /setMessageAttachments\(next\)/);
+});
