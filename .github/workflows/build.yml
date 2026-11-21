@@ -39,7 +39,7 @@ jobs:
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 3.2.0
       - name: Start local Supabase
         run: supabase start
       - name: Apply all migrations from a clean database
@@ -48,4 +48,9 @@ jobs:
         run: supabase test db
       - name: Stop local Supabase
         if: always()
-        run: supabase stop --no-backup
+        run: |
+          if command -v supabase >/dev/null 2>&1; then
+            supabase stop --no-backup
+          else
+            echo 'Supabase CLI was not installed; skipping local stack cleanup.'
+          fi
