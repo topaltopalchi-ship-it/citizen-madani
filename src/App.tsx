@@ -98,6 +98,30 @@ function App() {
     return () => { active = false }
   }, [userEmail])
 
+  useEffect(() => {
+    if (!supabase || !profile?.id) return
+    const client = supabase
+    const channel = client.channel(`employee-inbox-${profile.id}-${selectedContact?.id ?? 'none'}`)
+      .on('postgres_changes', {
+        event: 'INSERT', schema: 'public', table: 'direct_messages',
+        filter: `recipient_id=eq.${profile.id}`,
+      }, payload => {
+        const incoming = payload.new as DirectMessage
+        if (selectedContact?.id === incoming.sender_id) {
+          setThreadMessages(current => current.some(m => m.id === incoming.id) ? current : [...current, incoming])
+          const readAt = new Date().toISOString()
+          void client.from('direct_messages').update({ read_at: readAt })
+            .eq('id', incoming.id).eq('recipient_id', profile.id)
+          setThreadMessages(current => current.map(m => m.id === incoming.id ? { ...m, read_at: readAt } : m))
+        } else {
+          setUnreadCount(current => current + 1)
+          setMessage('یک پیام جدید دریافت کردید.')
+        }
+      })
+      .subscribe()
+    return () => { void client.removeChannel(channel) }
+  }, [profile?.id, selectedContact?.id])
+
   const login = async (e: FormEvent) => {
     e.preventDefault()
     if (!supabase) return
@@ -228,7 +252,7 @@ function App() {
     <div className="layout">
       <aside className={mobileNav ? 'sidebar open' : 'sidebar'}>
         <div className="side-caption">فضای کاری</div>
-        {[...nav, ...(isAdmin ? [{ label: 'مدیریت درخواست‌ها' as Page, icon: ShieldCheck }] : [])].map(({ label, icon: Icon }) => <button key={label} className={page === label ? 'nav-item active' : 'nav-item'} onClick={() => go(label)}><Icon size={18} /><span>{label}</span>{page === label && <ChevronLeft size={16} className="nav-arrow" />}</button>)}
+        {[...nav, ...(isAdmin ? [{ label: 'مدیریت درخواست‌ها' as Page, icon: ShieldCheck }] : [])].map(({ label, icon: Icon }) => <button key={label} className={page === label ? 'nav-item active' : 'nav-item'} onClick={() => go(label)}><Icon size={18} /><span>{label}</span>{label === 'پیام‌ها' && unreadCount > 0 && <span className="nav-unread">{unreadCount > 99 ? '99+' : unreadCount}</span>}{page === label && <ChevronLeft size={16} className="nav-arrow" />}</button>)}
         <div className="side-card"><div className="side-card-icon"><HeartHandshake size={20} /></div><strong>همراه یکدیگر</strong><p>برای ساخت محیط کاری بهتر، ارتباط و همکاری را آسان‌تر کنیم.</p></div>
         <div className="side-footer"><ShieldCheck size={15} /> فضای اختصاصی کارکنان</div>
       </aside>
