@@ -121,6 +121,19 @@ function App() {
     departments: Array.from(filteredReportShifts.reduce((map, shift) => map.set(shift.department, (map.get(shift.department) || 0) + 1), new Map<string, number>()).entries())
       .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'fa')),
   }), [filteredReportShifts])
+  const dailyShiftStats = useMemo(() => {
+    const counts = new Map<string, number>()
+    filteredReportShifts.forEach(shift => counts.set(shift.shift_date, (counts.get(shift.shift_date) || 0) + 1))
+    return Array.from(counts.entries()).sort((a, b) => a[0].localeCompare(b[0]))
+  }, [filteredReportShifts])
+  const employeeShiftStats = useMemo(() => {
+    const counts = new Map<string, number>()
+    filteredReportShifts.forEach(shift => counts.set(shift.employee_id, (counts.get(shift.employee_id) || 0) + 1))
+    return Array.from(counts.entries())
+      .map(([id, count]) => ({ id, count, name: colleagues.find(person => person.id === id)?.display_name || 'کارمند' }))
+      .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, 'fa'))
+      .slice(0, 6)
+  }, [filteredReportShifts, colleagues])
   const resetShiftReportFilters = () => { setReportDepartment('all'); setReportShiftType('all'); setReportEmployee('all') }
   const exportShiftCalendar = () => {
     const rows = [['تاریخ', 'نام کارمند', 'بخش', 'نوع شیفت', 'ساعت شروع', 'ساعت پایان', 'توضیحات']]
@@ -525,6 +538,19 @@ function App() {
                <div className="shift-summary-item night"><span>شیفت شب</span><strong>{monthlyShiftStats.night}</strong></div>
              </div>
              {monthlyShiftStats.departments.length > 0 && <div className="shift-department-report"><strong>توزیع شیفت بر اساس بخش</strong><div>{monthlyShiftStats.departments.map(([department, count]) => <span key={department}>{department}<b>{count}</b></span>)}</div></div>}
+             <div className="shift-analytics-grid">
+               <section className="shift-chart-card">
+                 <div className="shift-chart-heading"><strong>روند روزانه شیفت‌ها</strong><span>بر اساس فیلترهای فعال</span></div>
+                 {dailyShiftStats.length === 0 ? <p className="shift-chart-empty">داده‌ای برای نمایش وجود ندارد.</p> : <div className="shift-daily-chart" role="img" aria-label="نمودار تعداد شیفت‌ها در روزهای ماه">{dailyShiftStats.map(([day, count]) => {
+                   const max = Math.max(...dailyShiftStats.map(item => item[1]), 1)
+                   return <div className="shift-daily-column" key={day} title={new Date(day+'T12:00:00').toLocaleDateString('fa-IR')+' · '+count+' شیفت'}><strong>{count}</strong><span style={{height: Math.max(5, count / max * 100) + '%'}}/><small>{new Date(day+'T12:00:00').toLocaleDateString('fa-IR',{day:'numeric'})}</small></div>
+                 })}</div>}
+               </section>
+               <section className="shift-chart-card">
+                 <div className="shift-chart-heading"><strong>کارکنان با بیشترین شیفت</strong><span>۶ نفر اول</span></div>
+                 {employeeShiftStats.length === 0 ? <p className="shift-chart-empty">داده‌ای برای نمایش وجود ندارد.</p> : <div className="shift-employee-bars">{employeeShiftStats.map(item => <div className="shift-employee-bar" key={item.id}><div><span>{item.name}</span><b>{item.count}</b></div><span className="shift-employee-track"><i style={{width: (item.count / employeeShiftStats[0].count * 100) + '%'}}/></span></div>)}</div>}
+               </section>
+             </div>
              <div className="shift-calendar-grid shift-calendar-weekdays">{['شنبه','یکشنبه','دوشنبه','سه‌شنبه','چهارشنبه','پنجشنبه','جمعه'].map(day => <div key={day}>{day}</div>)}</div>
              <div className="shift-calendar-grid shift-calendar-days">{calendarCells.map((cell, index) => cell ? <div className={'shift-calendar-day' + (cell.key === dateKey(new Date()) ? ' today' : '')} key={cell.key}>
                <strong>{cell.date.toLocaleDateString('fa-IR', { day: 'numeric' })}</strong>
