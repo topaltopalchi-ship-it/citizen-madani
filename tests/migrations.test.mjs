@@ -467,6 +467,9 @@ test('exchange request management reports totals, outcomes, request types, and a
   assert.match(app, /XLSX\.utils\.json_to_sheet\(rows\)/);
   assert.match(app, /XLSX\.utils\.book_append_sheet\(workbook, worksheet, 'گزارش درخواست‌ها'\)/);
   assert.match(app, /onClick=\{exportExchangeRequestsExcel\}/);
+  assert.match(app, /departmentRequestBreakdown/);
+  assert.match(app, /تفکیک بخش‌ها/);
+  assert.match(app, /عملکرد درخواست‌ها به تفکیک بخش مبدأ/);
   assert.match(css, /\.exchange-report-grid/);
   assert.match(css, /\.exchange-report-card\.approved/);
   assert.match(readme, /20261122020000_exchange_request_review_tracking\.sql/);
