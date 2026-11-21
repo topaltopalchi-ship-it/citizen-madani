@@ -1,3 +1,36 @@
+-- Retire the unused legacy schema from 2026-11-20 before creating the current portal schema.
+-- Keep legacy records isolated for audit/recovery; the application uses employee_profiles.
+do $$
+begin
+  if to_regclass('public.profiles') is not null then
+    drop trigger if exists on_auth_user_created on auth.users;
+    alter table public.profiles rename to legacy_profiles_20261120;
+    revoke all privileges on table public.legacy_profiles_20261120 from public, anon, authenticated;
+    alter table public.legacy_profiles_20261120 enable row level security;
+  end if;
+
+  if to_regclass('public.exchange_requests') is not null
+     and exists (
+       select 1 from information_schema.columns
+       where table_schema = 'public'
+         and table_name = 'exchange_requests'
+         and column_name = 'requester_id'
+     )
+     and not exists (
+       select 1 from information_schema.columns
+       where table_schema = 'public'
+         and table_name = 'exchange_requests'
+         and column_name = 'employee_id'
+     ) then
+    alter table public.exchange_requests rename to legacy_exchange_requests_20261120;
+    revoke all privileges on table public.legacy_exchange_requests_20261120 from public, anon, authenticated;
+    alter table public.legacy_exchange_requests_20261120 enable row level security;
+  end if;
+end
+$$;
+
+drop function if exists public.handle_new_user();
+
 -- Citizen Madani: employee directory and exchange requests
 -- Apply with the Supabase SQL editor or Supabase CLI.
 create extension if not exists pgcrypto;
