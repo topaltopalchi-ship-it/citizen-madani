@@ -586,7 +586,7 @@ function App() {
 
   const openMessageAttachment = async (item: DirectMessage, selectedFile?: MessageAttachment) => {
     if (!supabase) return
-    const file = selectedFile ?? (item.attachment_path ? { path: item.attachment_path, name: file.name || 'فایل پیوست', type: file.type || 'application/octet-stream', size: file.size ?? 0 } : null)
+    const file = selectedFile ?? (item.attachment_path ? { path: item.attachment_path, name: item.attachment_name || 'فایل پیوست', type: item.attachment_type || 'application/octet-stream', size: item.attachment_size ?? 0 } : null)
     if (!file?.path) return
     const { data, error: linkError } = await supabase.storage.from('employee-message-attachments').createSignedUrl(file.path, 300)
     if (linkError || !data?.signedUrl) { setError('دریافت پیوست ممکن نیست؛ دسترسی گفت‌وگو را بررسی کنید.'); return }
