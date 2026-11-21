@@ -162,9 +162,6 @@ function App() {
   const adminPendingShiftChanges = shiftChangeRequests.filter(request => request.status === 'pending').length
   const activeEmployeeCount = colleagues.filter(employee => employee.is_active !== false).length
   const inactiveEmployeeCount = colleagues.length - activeEmployeeCount
-  const filteredContacts = useMemo(() => colleagues.filter(c => c.id !== profile?.id &&
-    [c.display_name, c.job_title, c.department].filter(Boolean).join(' ').toLowerCase().includes(contactQuery.toLowerCase())
-  ), [colleagues, profile?.id, contactQuery])
   const inboxByContact = useMemo(() => {
     const summary = new Map<string, { latest: DirectMessage; unread: number }>()
     inboxMessages.forEach(item => {
@@ -179,6 +176,18 @@ function App() {
     })
     return summary
   }, [inboxMessages, profile?.id])
+  const sortedContacts = useMemo(() => colleagues
+    .filter(person => person.id !== profile?.id)
+    .filter(person => {
+      const latest = inboxByContact.get(person.id)?.latest
+      return [person.display_name, person.job_title, person.department, latest?.body]
+        .filter(Boolean).join(' ').toLocaleLowerCase('fa').includes(contactQuery.trim().toLocaleLowerCase('fa'))
+    })
+    .sort((left, right) => {
+      const leftDate = inboxByContact.get(left.id)?.latest.created_at || ''
+      const rightDate = inboxByContact.get(right.id)?.latest.created_at || ''
+      return rightDate.localeCompare(leftDate) || left.display_name.localeCompare(right.display_name, 'fa')
+    }), [colleagues, profile?.id, inboxByContact, contactQuery])
 
   useEffect(() => {
     if (!supabase) return
@@ -547,7 +556,7 @@ function App() {
         {page === 'پیام‌ها' && <section className="panel">
           <div className="panel-title"><div><h2>پیام‌رسان خصوصی کارکنان</h2><p>گفت‌وگوی مستقیم و محرمانه با همکاران</p></div><span className="count-pill">{unreadCount} خوانده‌نشده</span></div>
           {!userEmail ? <LoginPrompt onLogin={() => setShowLogin(true)} /> : <div className="messenger-layout">
-            <aside className="contact-list"><strong>انتخاب همکار</strong><div className="contact-search"><Search size={16}/><input value={contactQuery} onChange={e => setContactQuery(e.target.value)} placeholder="جست‌وجوی همکار..." aria-label="جست‌وجوی همکار"/></div>{filteredContacts.map(c => <button key={c.id} className={selectedContact?.id === c.id ? 'contact-button selected' : 'contact-button'} onClick={() => loadThread(c)}><span className="avatar">{c.display_name?.slice(0,1) || 'ک'}</span><span className="contact-copy"><b>{c.display_name}</b><small>{inboxByContact.get(c.id)?.latest.body || c.department || c.job_title || 'شروع گفت‌وگوی خصوصی'}</small></span><span className="contact-meta">{inboxByContact.get(c.id)?.latest && <time>{new Date(inboxByContact.get(c.id)!.latest.created_at).toLocaleDateString('fa-IR',{month:'numeric',day:'numeric'})}</time>}{Boolean(inboxByContact.get(c.id)?.unread) && <i>{inboxByContact.get(c.id)!.unread > 99 ? '99+' : inboxByContact.get(c.id)!.unread}</i>}</span></button>)}</aside>
+            <aside className="contact-list"><strong>گفت‌وگوها <small className="conversation-sort-hint">مرتب‌شده بر اساس آخرین پیام</small></strong><div className="contact-search"><Search size={16}/><input value={contactQuery} onChange={e => setContactQuery(e.target.value)} placeholder="جست‌وجوی نام یا متن پیام..." aria-label="جست‌وجوی همکار"/></div>{sortedContacts.map(c => <button key={c.id} className={selectedContact?.id === c.id ? 'contact-button selected' : 'contact-button'} onClick={() => loadThread(c)}><span className="avatar">{c.display_name?.slice(0,1) || 'ک'}</span><span className="contact-copy"><b>{c.display_name}</b><small>{inboxByContact.get(c.id)?.latest.body || c.department || c.job_title || 'شروع گفت‌وگوی خصوصی'}</small></span><span className="contact-meta">{inboxByContact.get(c.id)?.latest && <time>{new Date(inboxByContact.get(c.id)!.latest.created_at).toLocaleDateString('fa-IR',{month:'numeric',day:'numeric'})}</time>}{Boolean(inboxByContact.get(c.id)?.unread) && <i>{inboxByContact.get(c.id)!.unread > 99 ? '99+' : inboxByContact.get(c.id)!.unread}</i>}</span></button>)}</aside>
             <div className="chat-panel">
               {selectedContact ? <><div className="chat-heading"><strong>{selectedContact.display_name}</strong><small>{selectedContact.department || 'همکار بیمارستان مدنی'}</small></div>
                 <div className="chat-messages">{threadLoading ? <div className="empty-chat">در حال بارگذاری گفت‌وگو...</div> : threadMessages.length ? threadMessages.map(m => <div key={m.id} className={m.sender_id === profile?.id ? 'chat-bubble mine' : 'chat-bubble'}><p>{m.body}</p><small>{new Date(m.created_at).toLocaleString('fa-IR')}</small></div>) : <div className="empty-chat">هنوز پیامی در این گفت‌وگو وجود ندارد.</div>}</div>
