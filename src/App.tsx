@@ -45,6 +45,7 @@ function App() {
   const [inboxMessages, setInboxMessages] = useState<DirectMessage[]>([])
   const [threadLoading, setThreadLoading] = useState(false)
   const [contactQuery, setContactQuery] = useState('')
+  const [threadQuery, setThreadQuery] = useState('')
   const threadLoadSequence = useRef(0)
   const [messageDraft, setMessageDraft] = useState('')
   const [messageAttachment, setMessageAttachment] = useState<File | null>(null)
@@ -170,7 +171,7 @@ function App() {
       const contactId = item.sender_id === profile?.id ? item.recipient_id : item.sender_id
       const current = summary.get(contactId)
       if (!current || item.created_at > current.latest.created_at) summary.set(contactId, { latest: item, unread: current?.unread ?? 0 })
-      if (item.recipient_id === profile?.id && !item.read_at) {
+      if (item.recipient_id === profile?.id && !item.read_at && !item.deleted_at) {
         const entry = summary.get(contactId)
         if (entry) entry.unread += 1
         else summary.set(contactId, { latest: item, unread: 1 })
@@ -178,6 +179,16 @@ function App() {
     })
     return summary
   }, [inboxMessages, profile?.id])
+  const filteredThreadMessages = useMemo(() => {
+    const query = threadQuery.trim().toLocaleLowerCase('fa')
+    if (!query) return threadMessages
+    return threadMessages.filter(item => [
+      item.deleted_at ? 'پیام حذف شده است' : item.body,
+      item.attachment_name,
+      item.attachment_type,
+    ].filter(Boolean).join(' ').toLocaleLowerCase('fa').includes(query))
+  }, [threadMessages, threadQuery])
+
   const sortedContacts = useMemo(() => colleagues
     .filter(person => person.id !== profile?.id)
     .filter(person => {
@@ -451,7 +462,7 @@ function App() {
   const loadThread = async (contact: Profile) => {
     if (!supabase || !profile) return
     const sequence = ++threadLoadSequence.current
-    setSelectedContact(contact); setThreadMessages([]); setThreadLoading(true); setError('')
+    setSelectedContact(contact); setThreadMessages([]); setThreadQuery(''); setThreadLoading(true); setError('')
     const { data, error: loadError } = await supabase.from('direct_messages')
       .select('id,sender_id,recipient_id,body,created_at,read_at,attachment_path,attachment_name,attachment_type,attachment_size,deleted_at')
       .or(`and(sender_id.eq.${profile.id},recipient_id.eq.${contact.id}),and(sender_id.eq.${contact.id},recipient_id.eq.${profile.id})`)
@@ -602,8 +613,8 @@ function App() {
           {!userEmail ? <LoginPrompt onLogin={() => setShowLogin(true)} /> : <div className="messenger-layout">
             <aside className="contact-list"><strong>گفت‌وگوها <small className="conversation-sort-hint">مرتب‌شده بر اساس آخرین پیام</small></strong><div className="contact-search"><Search size={16}/><input value={contactQuery} onChange={e => setContactQuery(e.target.value)} placeholder="جست‌وجوی نام یا متن پیام..." aria-label="جست‌وجوی همکار"/></div>{sortedContacts.map(c => <button key={c.id} className={selectedContact?.id === c.id ? 'contact-button selected' : 'contact-button'} onClick={() => loadThread(c)}><span className="avatar">{c.display_name?.slice(0,1) || 'ک'}</span><span className="contact-copy"><b>{c.display_name}</b><small>{inboxByContact.get(c.id)?.latest.body || c.department || c.job_title || 'شروع گفت‌وگوی خصوصی'}</small></span><span className="contact-meta">{inboxByContact.get(c.id)?.latest && <time>{new Date(inboxByContact.get(c.id)!.latest.created_at).toLocaleDateString('fa-IR',{month:'numeric',day:'numeric'})}</time>}{Boolean(inboxByContact.get(c.id)?.unread) && <i>{inboxByContact.get(c.id)!.unread > 99 ? '99+' : inboxByContact.get(c.id)!.unread}</i>}</span></button>)}</aside>
             <div className="chat-panel">
-              {selectedContact ? <><div className="chat-heading"><strong>{selectedContact.display_name}</strong><small>{selectedContact.department || 'همکار بیمارستان مدنی'}</small></div>
-                <div className="chat-messages">{threadLoading ? <div className="empty-chat">در حال بارگذاری گفت‌وگو...</div> : threadMessages.length ? threadMessages.map(m => <div key={m.id} className={m.sender_id === profile?.id ? 'chat-bubble mine' : 'chat-bubble'}>{m.body && <p className={m.deleted_at ? 'message-deleted-text' : undefined}>{m.body}</p>}{!m.deleted_at && m.attachment_path && <button type="button" className="message-attachment" onClick={() => openMessageAttachment(m)}><span>{m.attachment_type?.startsWith('image/') ? 'پیش‌نمایش تصویر' : 'فایل پیوست'}</span><b>{m.attachment_name || 'دریافت فایل'}</b><small>{m.attachment_size ? (m.attachment_size / 1024 / 1024).toFixed(2) + ' مگابایت' : ''}</small></button>}{m.sender_id === profile?.id && !m.deleted_at && <button type="button" className="message-delete-btn" disabled={busy} onClick={() => deleteOwnMessage(m)}>حذف پیام</button>}<small>{new Date(m.created_at).toLocaleString('fa-IR')}</small></div>) : <div className="empty-chat">هنوز پیامی در این گفت‌وگو وجود ندارد.</div>}</div>{attachmentPreview && <div className="attachment-preview-backdrop" role="presentation" onClick={() => setAttachmentPreview(null)}><section className="attachment-preview-modal" role="dialog" aria-modal="true" aria-label="پیش‌نمایش تصویر" onClick={e => e.stopPropagation()}><div><strong>{attachmentPreview.name}</strong><button type="button" className="icon-btn" aria-label="بستن پیش‌نمایش" onClick={() => setAttachmentPreview(null)}>×</button></div><img src={attachmentPreview.url} alt={attachmentPreview.name} /><small>این پیش‌نمایش از پیوند خصوصی و موقت استفاده می‌کند.</small></section></div>}
+              {selectedContact ? <><div className="chat-heading"><div><strong>{selectedContact.display_name}</strong><small>{selectedContact.department || 'همکار بیمارستان مدنی'}</small></div><div className="thread-search"><Search size={15}/><input value={threadQuery} onChange={e => setThreadQuery(e.target.value)} placeholder="جست‌وجو در این گفت‌وگو..." aria-label="جست‌وجو در پیام‌های این گفتگو"/>{threadQuery && <button type="button" onClick={() => setThreadQuery('')} aria-label="پاک کردن جست‌وجو">×</button>}</div></div>
+                <div className="chat-messages">{threadLoading ? <div className="empty-chat">در حال بارگذاری گفت‌وگو...</div> : filteredThreadMessages.length ? filteredThreadMessages.map(m => <div key={m.id} className={m.sender_id === profile?.id ? 'chat-bubble mine' : 'chat-bubble'}>{m.body && <p className={m.deleted_at ? 'message-deleted-text' : undefined}>{m.body}</p>}{!m.deleted_at && m.attachment_path && <button type="button" className="message-attachment" onClick={() => openMessageAttachment(m)}><span>{m.attachment_type?.startsWith('image/') ? 'پیش‌نمایش تصویر' : 'فایل پیوست'}</span><b>{m.attachment_name || 'دریافت فایل'}</b><small>{m.attachment_size ? (m.attachment_size / 1024 / 1024).toFixed(2) + ' مگابایت' : ''}</small></button>}{m.sender_id === profile?.id && !m.deleted_at && <button type="button" className="message-delete-btn" disabled={busy} onClick={() => deleteOwnMessage(m)}>حذف پیام</button>}<small>{new Date(m.created_at).toLocaleString('fa-IR')}</small></div>) : <div className="empty-chat">{threadQuery ? 'پیامی با این عبارت پیدا نشد.' : 'هنوز پیامی در این گفت‌وگو وجود ندارد.'}</div>}</div>{attachmentPreview && <div className="attachment-preview-backdrop" role="presentation" onClick={() => setAttachmentPreview(null)}><section className="attachment-preview-modal" role="dialog" aria-modal="true" aria-label="پیش‌نمایش تصویر" onClick={e => e.stopPropagation()}><div><strong>{attachmentPreview.name}</strong><button type="button" className="icon-btn" aria-label="بستن پیش‌نمایش" onClick={() => setAttachmentPreview(null)}>×</button></div><img src={attachmentPreview.url} alt={attachmentPreview.name} /><small>این پیش‌نمایش از پیوند خصوصی و موقت استفاده می‌کند.</small></section></div>}
                 <form className="chat-compose" onSubmit={sendDirectMessage}><textarea value={messageDraft} onChange={e => setMessageDraft(e.target.value)} maxLength={4000} rows={2} placeholder="پیام خود را بنویسید..." /><div className="chat-compose-tools"><label className="attachment-picker">＋ پیوست فایل یا تصویر<input type="file" accept="image/jpeg,image/png,image/webp,image/gif,application/pdf,text/plain,.docx,.xlsx" onChange={e => setMessageAttachment(e.target.files?.[0] ?? null)} /></label>{messageAttachment && <span className="attachment-selected">{messageAttachment.name}<button type="button" aria-label="حذف پیوست" onClick={() => setMessageAttachment(null)}>×</button></span>}<small>حداکثر ۱۰ مگابایت</small><button className="primary-btn" disabled={busy || (!messageDraft.trim() && !messageAttachment)}>{busy ? 'در حال ارسال...' : 'ارسال پیام'}</button></div></form>
               </> : <div className="empty-state"><Users size={34}/><strong>یک همکار را انتخاب کنید</strong><span>برای شروع گفت‌وگوی خصوصی، نام همکار را از فهرست انتخاب کنید.</span></div>}
             </div>
