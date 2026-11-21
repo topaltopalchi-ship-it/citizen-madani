@@ -409,3 +409,18 @@ test('community marketplace supports employee submissions and admin moderation U
   assert.match(css, /\.community-card/);
   assert.match(css, /\.community-list/);
 });
+
+test('compensation notices are draft-first and published through administrator controls', async () => {
+  const app = await readFile(new URL('../src/App.tsx', import.meta.url), 'utf8');
+  const migration = await readFile(new URL('../supabase/migrations/20261121230000_staff_community_and_compensation.sql', import.meta.url), 'utf8');
+  const css = await readFile(new URL('../src/styles.css', import.meta.url), 'utf8');
+  assert.match(app, /page === 'حقوق و کارانه'/);
+  assert.match(app, /from\('compensation_updates'\)\.select/);
+  assert.match(app, /const submitCompensationUpdate = async/);
+  assert.match(app, /const setCompensationStatus = async/);
+  assert.match(app, /status: 'draft'/);
+  assert.match(app, /انتشار برای کارکنان/);
+  assert.match(migration, /Active employees read published compensation updates/);
+  assert.match(migration, /Admins manage compensation updates/);
+  assert.match(css, /\.compensation-card/);
+});
