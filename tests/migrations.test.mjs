@@ -296,7 +296,7 @@ test('admin audit log supports local search, entity filters, and filtered CSV ex
   assert.match(app, /جست‌وجوی سجل فعالیت‌ها/);
   assert.match(app, /خروجی CSV/);
   assert.ok(app.includes(String.raw`const csv = '\uFEFF'`));
-  assert.ok(app.includes(String.raw`join('\r
+  assert.ok(app.includes("join('\\r\\n')"));
 ')`));
 });
 
