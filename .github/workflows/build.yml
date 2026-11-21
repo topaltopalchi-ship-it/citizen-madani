@@ -44,6 +44,10 @@ jobs:
         run: supabase start
       - name: Apply all migrations from a clean database
         run: supabase db reset
+      - name: Lint local PostgreSQL schema
+        run: supabase db lint --fail-on error
+      - name: Check local database security advisors
+        run: supabase db advisors --type security --fail-on error
       - name: Run PostgreSQL integration tests
         run: supabase test db
       - name: Stop local Supabase
