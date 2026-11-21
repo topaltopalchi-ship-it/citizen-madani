@@ -2,8 +2,8 @@ import { FormEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { Activity, ArrowLeftRight, Bell, Building2, CalendarDays, ChevronLeft, ClipboardList, HeartHandshake, Home, LogIn, LogOut, Menu, Search, ShieldCheck, UserRound, Users, X, Megaphone } from 'lucide-react'
 import { supabase } from './lib/supabase'
 
-type Page = 'خانه' | 'همکاران' | 'درخواست تبادل' | 'درخواست‌های من' | 'پروفایل' | 'مدیریت درخواست‌ها' | 'اطلاعیه‌ها' | 'پیام‌ها'
-type Profile = { id: string; display_name: string; department: string | null; job_title: string | null; role?: string }
+type Page = 'خانه' | 'همکاران' | 'درخواست تبادل' | 'درخواست‌های من' | 'پروفایل' | 'مدیریت درخواست‌ها' | 'مدیریت کارکنان' | 'اطلاعیه‌ها' | 'پیام‌ها'
+type Profile = { id: string; display_name: string; department: string | null; job_title: string | null; role?: string; is_active?: boolean }
 type ExchangeRequest = { id: string; employee_id?: string; request_type: string; from_unit: string; to_unit: string; note: string | null; status: string; created_at: string }
 type Announcement = { id: string; title: string; body: string; priority: 'normal' | 'important'; is_published: boolean; created_at: string; published_at: string | null }
 type DirectMessage = { id: string; sender_id: string; recipient_id: string; body: string; created_at: string; read_at: string | null }
@@ -27,6 +27,10 @@ function App() {
   const [requests, setRequests] = useState<ExchangeRequest[]>([])
   const [employeeNames, setEmployeeNames] = useState<Record<string, string>>({})
   const [announcements, setAnnouncements] = useState<Announcement[]>([])
+  const [editingEmployee, setEditingEmployee] = useState<Profile | null>(null)
+  const [employeeNameDraft, setEmployeeNameDraft] = useState('')
+  const [employeeDepartmentDraft, setEmployeeDepartmentDraft] = useState('')
+  const [employeeTitleDraft, setEmployeeTitleDraft] = useState('')
   const [selectedContact, setSelectedContact] = useState<Profile | null>(null)
   const [threadMessages, setThreadMessages] = useState<DirectMessage[]>([])
   const [threadLoading, setThreadLoading] = useState(false)
@@ -79,7 +83,7 @@ function App() {
       if (!userId) return
       const [profileResult, peopleResult, requestResult] = await Promise.all([
         client.from('employee_profiles').select('id,display_name,department,job_title,role').eq('id', userId).maybeSingle(),
-        client.from('employee_profiles').select('id,display_name,department,job_title').eq('is_active', true).order('display_name'),
+        client.from('employee_profiles').select('id,display_name,department,job_title,is_active').order('display_name'),
         client.from('exchange_requests').select('id,employee_id,request_type,from_unit,to_unit,note,status,created_at').order('created_at', { ascending: false }),
       ])
       if (!active) return
@@ -102,7 +106,7 @@ function App() {
     }
     load()
     return () => { active = false }
-  }, [userEmail])
+  }, [userEmail, profile?.role])
 
   useEffect(() => {
     if (!supabase || !profile?.id) return
@@ -208,6 +212,48 @@ function App() {
     setBusy(false)
   }
 
+  const beginEmployeeEdit = (employee: Profile) => {
+    setEditingEmployee(employee)
+    setEmployeeNameDraft(employee.display_name || '')
+    setEmployeeDepartmentDraft(employee.department || '')
+    setEmployeeTitleDraft(employee.job_title || '')
+    setError('')
+  }
+
+  const saveEmployee = async (e: FormEvent) => {
+    e.preventDefault()
+    if (!supabase || !isAdmin || !editingEmployee) return
+    if (!employeeNameDraft.trim()) { setError('نام نمایشی کارمند الزامی است.'); return }
+    setBusy(true); setError(''); setMessage('')
+    const changes = {
+      display_name: employeeNameDraft.trim(),
+      department: employeeDepartmentDraft.trim() || null,
+      job_title: employeeTitleDraft.trim() || null,
+    }
+    const { error: saveError } = await supabase.from('employee_profiles').update(changes).eq('id', editingEmployee.id)
+    if (saveError) setError('ذخیره مشخصات انجام نشد؛ مجوز مدیر و Migration مدیریت کارکنان را بررسی کنید.')
+    else {
+      setColleagues(current => current.map(person => person.id === editingEmployee.id ? { ...person, ...changes } : person))
+      if (profile?.id === editingEmployee.id) setProfile(current => current ? { ...current, ...changes } : current)
+      setEditingEmployee(null)
+      setMessage('مشخصات پرسنلی با موفقیت به‌روزرسانی شد.')
+    }
+    setBusy(false)
+  }
+
+  const toggleEmployeeActive = async (employee: Profile) => {
+    if (!supabase || !isAdmin || employee.id === profile?.id) return
+    const nextActive = employee.is_active === false
+    setBusy(true); setError(''); setMessage('')
+    const { error: statusError } = await supabase.from('employee_profiles').update({ is_active: nextActive }).eq('id', employee.id)
+    if (statusError) setError('تغییر وضعیت حساب انجام نشد؛ دسترسی مدیر را بررسی کنید.')
+    else {
+      setColleagues(current => current.map(person => person.id === employee.id ? { ...person, is_active: nextActive } : person))
+      setMessage(nextActive ? 'حساب کارمند فعال شد.' : 'حساب کارمند غیرفعال شد.')
+    }
+    setBusy(false)
+  }
+
   const loadThread = async (contact: Profile) => {
     if (!supabase || !profile) return
     const sequence = ++threadLoadSequence.current
@@ -263,7 +309,7 @@ function App() {
     <div className="layout">
       <aside className={mobileNav ? 'sidebar open' : 'sidebar'}>
         <div className="side-caption">فضای کاری</div>
-        {[...nav, ...(isAdmin ? [{ label: 'مدیریت درخواست‌ها' as Page, icon: ShieldCheck }] : [])].map(({ label, icon: Icon }) => <button key={label} className={page === label ? 'nav-item active' : 'nav-item'} onClick={() => go(label)}><Icon size={18} /><span>{label}</span>{label === 'پیام‌ها' && unreadCount > 0 && <span className="nav-unread">{unreadCount > 99 ? '99+' : unreadCount}</span>}{page === label && <ChevronLeft size={16} className="nav-arrow" />}</button>)}
+        {[...nav, ...(isAdmin ? [{ label: 'مدیریت درخواست‌ها' as Page, icon: ShieldCheck }, { label: 'مدیریت کارکنان' as Page, icon: Users }] : [])].map(({ label, icon: Icon }) => <button key={label} className={page === label ? 'nav-item active' : 'nav-item'} onClick={() => go(label)}><Icon size={18} /><span>{label}</span>{label === 'پیام‌ها' && unreadCount > 0 && <span className="nav-unread">{unreadCount > 99 ? '99+' : unreadCount}</span>}{page === label && <ChevronLeft size={16} className="nav-arrow" />}</button>)}
         <div className="side-card"><div className="side-card-icon"><HeartHandshake size={20} /></div><strong>همراه یکدیگر</strong><p>برای ساخت محیط کاری بهتر، ارتباط و همکاری را آسان‌تر کنیم.</p></div>
         <div className="side-footer"><ShieldCheck size={15} /> فضای اختصاصی کارکنان</div>
       </aside>
@@ -315,6 +361,7 @@ function App() {
           </div>}
         </section>}
         {page === 'مدیریت درخواست‌ها' && <section className="panel"><div className="panel-title"><div><h2>مدیریت درخواست‌های تبادل</h2><p>بررسی و تعیین نتیجه درخواست‌های کارکنان</p></div><span className="count-pill">{requests.filter(r => r.status === 'pending').length} در انتظار</span></div>{!isAdmin ? <LoginPrompt onLogin={() => setShowLogin(true)} /> : requests.length === 0 ? <div className="empty-state"><ClipboardList size={36}/><strong>درخواستی برای بررسی وجود ندارد</strong></div> : <div className="request-list">{requests.map(r => <div className="request-row" key={r.id}><div className="request-symbol"><ArrowLeftRight/></div><div className="request-info"><strong>{r.request_type} · {employeeNames[r.employee_id || ''] || 'کارمند'}</strong><span>{r.from_unit} ← {r.to_unit}</span>{r.note && <small>{r.note}</small>}<small>{new Date(r.created_at).toLocaleDateString('fa-IR')}</small></div><span className={r.status === 'approved' ? 'status-approved' : r.status === 'rejected' ? 'status-rejected' : 'status-pending'}>{statusLabel(r.status)}</span>{r.status === 'pending' && <div className="review-actions"><button className="approve-btn" disabled={busy} onClick={() => reviewRequest(r.id, 'approved')}>تأیید</button><button className="reject-btn" disabled={busy} onClick={() => reviewRequest(r.id, 'rejected')}>رد</button></div>}</div>)}</div>}</section>}
+        {page === 'مدیریت کارکنان' && <section className="panel"><div className="panel-title"><div><h2>مدیریت کارکنان</h2><p>ویرایش اطلاعات پرسنلی و کنترل وضعیت حساب‌های کارکنان</p></div><span className="count-pill">{colleagues.length} حساب</span></div>{!isAdmin ? <LoginPrompt onLogin={() => setShowLogin(true)} /> : <><div className="people-list employee-admin-list">{colleagues.map(employee => <div className="employee-admin-row" key={employee.id}><div className="employee-admin-person"><div className="avatar">{employee.display_name?.slice(0, 1) || 'ک'}</div><div className="person-info"><strong>{employee.display_name}</strong><span>{employee.job_title || 'سمت ثبت نشده'}{employee.department ? ' · ' + employee.department : ''}</span></div></div><span className={employee.is_active === false ? 'employee-state inactive' : 'employee-state'}>{employee.is_active === false ? 'غیرفعال' : 'فعال'}</span><div className="employee-admin-actions"><button className="small-outline" disabled={busy} onClick={() => beginEmployeeEdit(employee)}>ویرایش مشخصات</button>{employee.id !== profile?.id && <button className={employee.is_active === false ? 'approve-btn' : 'reject-btn'} disabled={busy} onClick={() => toggleEmployeeActive(employee)}>{employee.is_active === false ? 'فعال‌سازی' : 'غیرفعال‌سازی'}</button>}</div></div>)}</div>{colleagues.length === 0 && <div className="empty-state"><Users size={34}/><strong>کارمندی ثبت نشده است</strong></div>}{editingEmployee && <form className="employee-edit-form" onSubmit={saveEmployee}><div className="panel-title"><div><h3>ویرایش اطلاعات {editingEmployee.display_name}</h3><p>نقش مدیریتی و شناسه حساب از این فرم قابل تغییر نیست.</p></div><button type="button" className="small-outline" onClick={() => setEditingEmployee(null)}>انصراف</button></div><label htmlFor="employee-name">نام و نام خانوادگی</label><input id="employee-name" required maxLength={120} value={employeeNameDraft} onChange={e => setEmployeeNameDraft(e.target.value)} /><div className="field-grid"><div><label htmlFor="employee-department">بخش</label><input id="employee-department" maxLength={100} value={employeeDepartmentDraft} onChange={e => setEmployeeDepartmentDraft(e.target.value)} placeholder="نام بخش" /></div><div><label htmlFor="employee-title">سمت سازمانی</label><input id="employee-title" maxLength={120} value={employeeTitleDraft} onChange={e => setEmployeeTitleDraft(e.target.value)} placeholder="سمت کارمند" /></div></div><button className="primary-btn" disabled={busy}>{busy ? 'در حال ذخیره...' : 'ذخیره تغییرات'}</button></form>}</>}</section>}
         {page === 'پروفایل' && <section className="panel profile-panel"><div className="profile-avatar"><UserRound size={34} /></div><h2>{profile?.display_name || 'پروفایل کارمند'}</h2><p>{profile ? [profile.job_title, profile.department].filter(Boolean).join(' · ') : userEmail || 'برای مشاهده اطلاعات پروفایل وارد سامانه شوید.'}</p>{userEmail ? <button className="primary-btn" onClick={logout}><LogOut size={16} /> خروج از حساب</button> : <button className="primary-btn" onClick={() => setShowLogin(true)}>ورود کارکنان</button>}</section>}
         <footer className="footer">شهروند مدنی <span>·</span> سامانه جامعه دیجیتال کارکنان بیمارستان مدنی</footer>
       </main>
