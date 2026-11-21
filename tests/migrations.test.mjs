@@ -298,3 +298,26 @@ test('admin audit log supports local search, entity filters, and filtered CSV ex
   assert.ok(app.includes(String.raw`const csv = '\uFEFF'`));
   assert.ok(app.includes(String.raw`join('\r\n')`));
 });
+
+
+test('staff community listings are separated by category and protected by employee/admin RLS', async () => {
+  const migration = await readFile(new URL('../supabase/migrations/20261121230000_staff_community_and_compensation.sql', import.meta.url), 'utf8');
+  assert.match(migration, /create table if not exists public\.community_listings/);
+  assert.match(migration, /'advertisement', 'used_item', 'department_transfer', 'marketplace'/);
+  assert.match(migration, /status = 'pending'/);
+  assert.match(migration, /public\.is_citizen_madani_active_employee\(\)/);
+  assert.match(migration, /public\.is_citizen_madani_admin\(\)/);
+  assert.match(migration, /Owners edit pending or close own listings/);
+  assert.match(migration, /Admins moderate all community listings/);
+  assert.match(migration, /listing_type <> 'department_transfer' or/);
+  assert.match(migration, /current_department <> desired_department/);
+});
+
+test('salary, karaneh, and overtime updates are published only by administrators', async () => {
+  const migration = await readFile(new URL('../supabase/migrations/20261121230000_staff_community_and_compensation.sql', import.meta.url), 'utf8');
+  assert.match(migration, /create table if not exists public\.compensation_updates/);
+  assert.match(migration, /'salary', 'karaneh', 'overtime', 'benefits', 'other'/);
+  assert.match(migration, /status = 'published' and public\.is_citizen_madani_active_employee\(\)/);
+  assert.match(migration, /Admins manage compensation updates/);
+  assert.match(migration, /created_by = auth\.uid\(\)/);
+});
