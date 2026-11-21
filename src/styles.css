@@ -129,3 +129,102 @@ body{background:radial-gradient(ellipse at 12% 0%,#e4f2f1 0,transparent 34%),lin
 .close-btn{z-index:3;background:#ffffff20;color:white;border:1px solid #ffffff45;box-shadow:0 3px 10px #062b3a20}
 .close-btn:hover{background:#ffffff38;color:white}
 @media(max-width:480px){.login-modal{padding:0 19px 21px;border-radius:21px}.login-visual{margin:0 -19px 5px;height:150px;padding:20px}.login-visual>strong{font-size:19px}.login-form-heading h2{font-size:17px}}
+
+
+/* Consistent inner-page system: forms, lists, notices and messaging */
+:where(button,input,select,textarea){font:inherit}
+:where(button){-webkit-tap-highlight-color:transparent}
+:where(button,input,select,textarea):focus-visible{outline:3px solid #39a99d88;outline-offset:3px}
+:where(input,select,textarea){transition:border-color .18s,box-shadow .18s,background .18s}
+.search-box:focus-within,.form-panel select:focus,.form-panel textarea:focus,.announcement-form input:focus,.announcement-form textarea:focus,.announcement-form select:focus,.chat-compose textarea:focus{border-color:#54aaa2;box-shadow:0 0 0 4px #43a69a18;background:#fff}
+.panel-title{gap:14px;flex-wrap:wrap}
+.panel-title>div:first-child{min-width:0}
+.panel-title p,.section-heading p{margin:5px 0 0;color:#82969d;font-size:11px;line-height:1.8}
+.count-pill{border:1px solid #d8ebe7;font-weight:700;white-space:nowrap}
+.notice{border-radius:15px;padding:16px 18px;align-items:center;background:linear-gradient(135deg,#edf8f5,#f2f7fb);border-color:#dcece8}
+.notice[role="alert"]{background:linear-gradient(135deg,#fff6ed,#fff2f1);border-color:#f2dfd7}
+.notice[role="alert"] .notice-icon{color:#b66b45}
+.notice>div:nth-child(2){min-width:0;flex:1}
+.notice p{overflow-wrap:anywhere}
+.person-row,.request-row{transition:background .18s,padding .18s;border-radius:11px;padding-right:10px;padding-left:10px}
+.person-row:hover,.request-row:hover{background:#f7fbfa}
+.person-info,.request-info{min-width:0}
+.person-info strong,.request-info strong{line-height:1.8}
+.request-info span,.request-info small{overflow-wrap:anywhere;line-height:1.8}
+.request-row{gap:13px}
+.status-pending,.status-approved,.status-rejected{font-weight:700;border:1px solid transparent}
+.status-pending{border-color:#f2e5cb}
+.status-approved{border-color:#d2eadb}
+.status-rejected{border-color:#f1d8d6}
+.review-actions{flex-shrink:0}
+.approve-btn:hover,.reject-btn:hover,.small-outline:hover,.choice:hover{transform:translateY(-1px);filter:brightness(.98)}
+.approve-btn:active,.reject-btn:active,.small-outline:active,.choice:active{transform:translateY(1px)}
+.form-panel form{gap:12px}
+.form-panel label,.announcement-form label{font-weight:700;color:#476570}
+.form-panel select,.form-panel textarea,.announcement-form input,.announcement-form textarea,.announcement-form select,.chat-compose textarea,.search-box{border-radius:12px;border-color:#dfe9eb;background:#fcfefe}
+.form-panel select,.announcement-form select{min-height:45px}
+.form-panel textarea,.announcement-form textarea{line-height:2}
+.field-grid{gap:16px}
+.field-grid>div{min-width:0}
+.choice-row{flex-wrap:wrap}
+.choice{min-height:40px;padding:10px 17px}
+.form-actions{gap:14px;flex-wrap:wrap}
+.form-actions span{line-height:1.9;max-width:65%}
+.primary-btn:disabled,.login-btn:disabled{opacity:.58;cursor:not-allowed;transform:none;box-shadow:0 3px 0 #0b4c59}
+.announcement-form{background:linear-gradient(145deg,#f6faf9,#f2f7fa);border-radius:16px;padding:20px}
+.announcement-form h3{font-size:14px;color:#1b4856}
+.announcement-card{background:linear-gradient(145deg,#fff,#fbfdfd);box-shadow:0 5px 16px #214c5c0a;transition:transform .2s,box-shadow .2s}
+.announcement-card:hover{transform:translateY(-2px);box-shadow:0 10px 22px #214c5c12}
+.announcement-head{align-items:flex-start}
+.announcement-head>div{min-width:0}
+.announcement-head h3{line-height:1.9;overflow-wrap:anywhere}
+.announcement-card>p{line-height:2.15;overflow-wrap:anywhere}
+.announcement-foot{padding-top:10px;border-top:1px solid #edf2f2}
+.messenger-layout{align-items:stretch}
+.contact-list{background:linear-gradient(180deg,#fbfdfd,#f6faf9);border-color:#e1ebed}
+.contact-list>strong{color:#244b59;padding:3px 4px 8px}
+.contact-button{width:100%;min-width:0}
+.contact-button>span:last-child{overflow:hidden}
+.contact-button b,.contact-button small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chat-panel{background:#fff;border-color:#dfe9eb;box-shadow:0 5px 18px #214c5c08}
+.chat-heading{background:linear-gradient(100deg,#f7fbfa,#f2f7fa);min-height:62px;justify-content:center}
+.chat-heading strong{color:#1c4857;font-size:13px}
+.chat-messages{gap:13px;padding:19px;background-color:#f8fbfb;background-image:radial-gradient(#d9e8e6 0.7px,transparent .7px);background-size:18px 18px}
+.chat-bubble{border:1px solid #e1e9e9;box-shadow:0 3px 9px #244e5b0a;padding:11px 14px}
+.chat-bubble.mine{border-color:#cde7df;background:linear-gradient(145deg,#eaf8f1,#e6f3f5)}
+.chat-bubble p{line-height:2}
+.chat-compose{background:#fff}
+.chat-compose textarea{line-height:1.9;min-height:48px}
+.empty-state{padding:25px 12px;text-align:center}
+.empty-state>svg{color:#4a9995}
+.empty-state span{max-width:420px;line-height:2}
+.profile-panel{background:radial-gradient(circle at 50% 0,#eaf7f3 0,transparent 48%),linear-gradient(145deg,#fff,#f9fcfd)}
+.profile-avatar{border:1px solid #dcece8;width:82px;height:82px;border-radius:27px}
+.profile-panel h2{color:#1b4857}
+.profile-panel p{line-height:2}
+.footer{padding:18px 8px;border-top:1px solid #e3ecee;line-height:2}
+@media(max-width:700px){
+ .panel-title{align-items:flex-start}
+ .panel-title .primary-btn{width:100%;justify-content:center}
+ .request-row{padding:13px 8px;gap:10px}
+ .request-info{flex:1 1 55%;min-width:0}
+ .request-row>.status-pending,.request-row>.status-approved,.request-row>.status-rejected{margin-right:0}
+ .form-actions span{max-width:none}
+ .form-actions .primary-btn{width:100%;justify-content:center}
+ .announcement-form .primary-btn{width:100%;justify-content:center}
+ .announcement-head{gap:8px}
+ .announcement-head h3{font-size:13px}
+}
+@media(max-width:420px){
+ .panel{padding:15px}
+ .panel-title h2{font-size:14px}
+ .choice-row{display:grid;grid-template-columns:1fr 1fr}
+ .choice{padding:9px 6px;font-size:10px}
+ .request-symbol{width:35px;height:35px}
+ .request-row>.status-pending,.request-row>.status-approved,.request-row>.status-rejected{font-size:9px;padding:6px 8px}
+ .review-actions{width:100%;margin:0;justify-content:flex-end}
+ .review-actions button{flex:1}
+}
+@media(prefers-reduced-motion:reduce){
+ *,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+}
