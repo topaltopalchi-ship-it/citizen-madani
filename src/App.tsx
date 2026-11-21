@@ -42,6 +42,7 @@ function App() {
   const [employeeStatusFilter, setEmployeeStatusFilter] = useState<'all' | 'active' | 'inactive'>('all')
   const [selectedContact, setSelectedContact] = useState<Profile | null>(null)
   const [threadMessages, setThreadMessages] = useState<DirectMessage[]>([])
+  const [inboxMessages, setInboxMessages] = useState<DirectMessage[]>([])
   const [threadLoading, setThreadLoading] = useState(false)
   const [contactQuery, setContactQuery] = useState('')
   const threadLoadSequence = useRef(0)
@@ -164,6 +165,20 @@ function App() {
   const filteredContacts = useMemo(() => colleagues.filter(c => c.id !== profile?.id &&
     [c.display_name, c.job_title, c.department].filter(Boolean).join(' ').toLowerCase().includes(contactQuery.toLowerCase())
   ), [colleagues, profile?.id, contactQuery])
+  const inboxByContact = useMemo(() => {
+    const summary = new Map<string, { latest: DirectMessage; unread: number }>()
+    inboxMessages.forEach(item => {
+      const contactId = item.sender_id === profile?.id ? item.recipient_id : item.sender_id
+      const current = summary.get(contactId)
+      if (!current || item.created_at > current.latest.created_at) summary.set(contactId, { latest: item, unread: current?.unread ?? 0 })
+      if (item.recipient_id === profile?.id && !item.read_at) {
+        const entry = summary.get(contactId)
+        if (entry) entry.unread += 1
+        else summary.set(contactId, { latest: item, unread: 1 })
+      }
+    })
+    return summary
+  }, [inboxMessages, profile?.id])
 
   useEffect(() => {
     if (!supabase) return
@@ -214,8 +229,11 @@ function App() {
         if (active && auditError) setError('بارگذاری گزارش فعالیت مدیران انجام نشد؛ Migration ثبت رویدادها را بررسی کنید.')
         if (active && auditData) setAuditEntries(auditData as AuditEntry[])
       } else if (active) setAuditEntries([])
-      const { count } = await client.from('direct_messages').select('id', { count: 'exact', head: true }).eq('recipient_id', userId).is('read_at', null)
-      if (active) setUnreadCount(count ?? 0)
+      const [{ count }, inboxResult] = await Promise.all([
+        client.from('direct_messages').select('id', { count: 'exact', head: true }).eq('recipient_id', userId).is('read_at', null),
+        client.from('direct_messages').select('id,sender_id,recipient_id,body,created_at,read_at').or(`sender_id.eq.${userId},recipient_id.eq.${userId}`).order('created_at', { ascending: false }).limit(300),
+      ])
+      if (active) { setUnreadCount(count ?? 0); if (inboxResult.data) setInboxMessages(inboxResult.data as DirectMessage[]) }
       const ids = [...new Set((requestResult.data ?? []).map((r: any) => r.employee_id))]
       if (ids.length) {
         const { data: names } = await client.from('employee_profiles').select('id,display_name').in('id', ids)
@@ -237,12 +255,15 @@ function App() {
         const incoming = payload.new as DirectMessage
         if (selectedContact?.id === incoming.sender_id) {
           setThreadMessages(current => current.some(m => m.id === incoming.id) ? current : [...current, incoming])
+          setInboxMessages(current => [incoming, ...current.filter(m => m.id !== incoming.id)])
           const readAt = new Date().toISOString()
           void client.from('direct_messages').update({ read_at: readAt })
             .eq('id', incoming.id).eq('recipient_id', profile.id)
           setThreadMessages(current => current.map(m => m.id === incoming.id ? { ...m, read_at: readAt } : m))
+          setInboxMessages(current => current.map(m => m.id === incoming.id ? { ...m, read_at: readAt } : m))
         } else {
           setUnreadCount(current => current + 1)
+          setInboxMessages(current => [incoming, ...current.filter(m => m.id !== incoming.id)])
           setMessage('یک پیام جدید دریافت کردید.')
         }
       })
@@ -436,6 +457,7 @@ function App() {
       if (readError) setError('پیام‌ها نمایش داده شدند اما وضعیت خوانده‌شدن ثبت نشد.')
       else {
         setThreadMessages(current => current.map(m => unreadIds.includes(m.id) ? { ...m, read_at: readAt } : m))
+        setInboxMessages(current => current.map(m => unreadIds.includes(m.id) ? { ...m, read_at: readAt } : m))
         setUnreadCount(current => Math.max(0, current - unreadIds.length))
       }
     }
@@ -450,7 +472,7 @@ function App() {
       sender_id: profile.id, recipient_id: selectedContact.id, body: messageDraft.trim(),
     }).select('id,sender_id,recipient_id,body,created_at,read_at').single()
     if (sendError) setError('ارسال پیام انجام نشد. اتصال و دسترسی حساب را بررسی کنید.')
-    else { setThreadMessages(current => [...current, data]); setMessageDraft(''); setMessage('پیام ارسال شد.') }
+    else { setThreadMessages(current => [...current, data]); setInboxMessages(current => [data, ...current.filter(m => m.id !== data.id)]); setMessageDraft(''); setMessage('پیام ارسال شد.') }
     setBusy(false)
   }
 
@@ -525,7 +547,7 @@ function App() {
         {page === 'پیام‌ها' && <section className="panel">
           <div className="panel-title"><div><h2>پیام‌رسان خصوصی کارکنان</h2><p>گفت‌وگوی مستقیم و محرمانه با همکاران</p></div><span className="count-pill">{unreadCount} خوانده‌نشده</span></div>
           {!userEmail ? <LoginPrompt onLogin={() => setShowLogin(true)} /> : <div className="messenger-layout">
-            <aside className="contact-list"><strong>انتخاب همکار</strong><div className="contact-search"><Search size={16}/><input value={contactQuery} onChange={e => setContactQuery(e.target.value)} placeholder="جست‌وجوی همکار..." aria-label="جست‌وجوی همکار"/></div>{filteredContacts.map(c => <button key={c.id} className={selectedContact?.id === c.id ? 'contact-button selected' : 'contact-button'} onClick={() => loadThread(c)}><span className="avatar">{c.display_name?.slice(0,1) || 'ک'}</span><span><b>{c.display_name}</b><small>{c.department || c.job_title || 'کارمند'}</small></span></button>)}</aside>
+            <aside className="contact-list"><strong>انتخاب همکار</strong><div className="contact-search"><Search size={16}/><input value={contactQuery} onChange={e => setContactQuery(e.target.value)} placeholder="جست‌وجوی همکار..." aria-label="جست‌وجوی همکار"/></div>{filteredContacts.map(c => <button key={c.id} className={selectedContact?.id === c.id ? 'contact-button selected' : 'contact-button'} onClick={() => loadThread(c)}><span className="avatar">{c.display_name?.slice(0,1) || 'ک'}</span><span className="contact-copy"><b>{c.display_name}</b><small>{inboxByContact.get(c.id)?.latest.body || c.department || c.job_title || 'شروع گفت‌وگوی خصوصی'}</small></span><span className="contact-meta">{inboxByContact.get(c.id)?.latest && <time>{new Date(inboxByContact.get(c.id)!.latest.created_at).toLocaleDateString('fa-IR',{month:'numeric',day:'numeric'})}</time>}{Boolean(inboxByContact.get(c.id)?.unread) && <i>{inboxByContact.get(c.id)!.unread > 99 ? '99+' : inboxByContact.get(c.id)!.unread}</i>}</span></button>)}</aside>
             <div className="chat-panel">
               {selectedContact ? <><div className="chat-heading"><strong>{selectedContact.display_name}</strong><small>{selectedContact.department || 'همکار بیمارستان مدنی'}</small></div>
                 <div className="chat-messages">{threadLoading ? <div className="empty-chat">در حال بارگذاری گفت‌وگو...</div> : threadMessages.length ? threadMessages.map(m => <div key={m.id} className={m.sender_id === profile?.id ? 'chat-bubble mine' : 'chat-bubble'}><p>{m.body}</p><small>{new Date(m.created_at).toLocaleString('fa-IR')}</small></div>) : <div className="empty-chat">هنوز پیامی در این گفت‌وگو وجود ندارد.</div>}</div>
