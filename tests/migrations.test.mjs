@@ -435,3 +435,19 @@ test('marketplace rejection requires and persists a moderation reason', async ()
   assert.match(app, /توضیح بررسی:/);
   assert.match(css, /\.community-moderation-editor/);
 });
+
+test('exchange request decisions store administrator identity and employee-facing review notes', async () => {
+  const app = await readFile(new URL('../src/App.tsx', import.meta.url), 'utf8');
+  const migration = await readFile(new URL('../supabase/migrations/20261122020000_exchange_request_review_tracking.sql', import.meta.url), 'utf8');
+  const css = await readFile(new URL('../src/styles.css', import.meta.url), 'utf8');
+  assert.match(app, /reviewed_by: profile\.id/);
+  assert.match(app, /review_note: reviewNote \|\| null/);
+  assert.match(app, /r\.review_note/);
+  assert.match(app, /requestReviewNotes\[r\.id\]/);
+  assert.match(app, /status === 'rejected' && reviewNote\.length < 5/);
+  assert.match(migration, /reviewed_by uuid references public\.employee_profiles/);
+  assert.match(migration, /reviewed_by = auth\.uid\(\)/);
+  assert.match(migration, /review_note text/);
+  assert.match(css, /\.request-review-editor/);
+  assert.match(css, /\.request-review-note/);
+});
