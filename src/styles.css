@@ -616,3 +616,12 @@ body{background:radial-gradient(ellipse at 12% 0%,#e4f2f1 0,transparent 34%),lin
 .notification-copy small{font-size:10px;color:#9aabad}
 .notification-card>.small-outline{flex-shrink:0}
 @media(max-width:520px){.notification-card{align-items:flex-start;flex-wrap:wrap;padding:11px}.notification-icon{width:35px;height:35px;flex-basis:35px}.notification-copy{width:calc(100% - 50px)}.notification-card>.small-outline{margin-right:47px}}
+
+.notification-panel-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.notification-card.is-unread{border-color:#c8e5df;background:linear-gradient(135deg,#f4fbf8,#fff)}
+.notification-card.is-read{opacity:.78}
+.notification-unread-dot{padding:3px 7px;border-radius:20px;background:#e3f4ed;color:#28785d;font-size:9px;font-weight:800}
+.notification-icon.direct_message{background:#eaf1ff;color:#416eaf}
+.notification-icon.exchange_request{background:#fff3e5;color:#a87536}
+.notification-icon.shift_swap{background:#f0ebff;color:#7958a7}
+.notification-icon.announcement{background:#e9f6ef;color:#37805a}
