@@ -45,6 +45,7 @@ function App() {
   const [inboxMessages, setInboxMessages] = useState<DirectMessage[]>([])
   const [threadLoading, setThreadLoading] = useState(false)
   const [contactQuery, setContactQuery] = useState('')
+  const [contactFilter, setContactFilter] = useState<'all' | 'unread' | 'messaged' | 'new'>('all')
   const [threadQuery, setThreadQuery] = useState('')
   const threadLoadSequence = useRef(0)
   const [messageDraft, setMessageDraft] = useState('')
@@ -189,18 +190,34 @@ function App() {
     ].filter(Boolean).join(' ').toLocaleLowerCase('fa').includes(query))
   }, [threadMessages, threadQuery])
 
+  const contactFilterCounts = useMemo(() => {
+    const contacts = colleagues.filter(person => person.id !== profile?.id)
+    return {
+      all: contacts.length,
+      unread: contacts.filter(person => (inboxByContact.get(person.id)?.unread ?? 0) > 0).length,
+      messaged: contacts.filter(person => Boolean(inboxByContact.get(person.id)?.latest)).length,
+      new: contacts.filter(person => !inboxByContact.get(person.id)?.latest).length,
+    }
+  }, [colleagues, profile?.id, inboxByContact])
+
   const sortedContacts = useMemo(() => colleagues
     .filter(person => person.id !== profile?.id)
     .filter(person => {
-      const latest = inboxByContact.get(person.id)?.latest
-      return [person.display_name, person.job_title, person.department, latest?.body]
+      const summary = inboxByContact.get(person.id)
+      const latest = summary?.latest
+      const matchesFilter = contactFilter === 'all' ||
+        (contactFilter === 'unread' && (summary?.unread ?? 0) > 0) ||
+        (contactFilter === 'messaged' && Boolean(latest)) ||
+        (contactFilter === 'new' && !latest)
+      const matchesQuery = [person.display_name, person.job_title, person.department, latest?.deleted_at ? 'پیام حذف شده است' : latest?.body]
         .filter(Boolean).join(' ').toLocaleLowerCase('fa').includes(contactQuery.trim().toLocaleLowerCase('fa'))
+      return matchesFilter && matchesQuery
     })
     .sort((left, right) => {
       const leftDate = inboxByContact.get(left.id)?.latest.created_at || ''
       const rightDate = inboxByContact.get(right.id)?.latest.created_at || ''
       return rightDate.localeCompare(leftDate) || left.display_name.localeCompare(right.display_name, 'fa')
-    }), [colleagues, profile?.id, inboxByContact, contactQuery])
+    }), [colleagues, profile?.id, inboxByContact, contactQuery, contactFilter])
 
   useEffect(() => {
     if (!supabase) return
@@ -611,7 +628,7 @@ function App() {
         {page === 'پیام‌ها' && <section className="panel">
           <div className="panel-title"><div><h2>پیام‌رسان خصوصی کارکنان</h2><p>گفت‌وگوی مستقیم و محرمانه با همکاران</p></div><span className="count-pill">{unreadCount} خوانده‌نشده</span></div>
           {!userEmail ? <LoginPrompt onLogin={() => setShowLogin(true)} /> : <div className="messenger-layout">
-            <aside className="contact-list"><strong>گفت‌وگوها <small className="conversation-sort-hint">مرتب‌شده بر اساس آخرین پیام</small></strong><div className="contact-search"><Search size={16}/><input value={contactQuery} onChange={e => setContactQuery(e.target.value)} placeholder="جست‌وجوی نام یا متن پیام..." aria-label="جست‌وجوی همکار"/></div>{sortedContacts.map(c => <button key={c.id} className={selectedContact?.id === c.id ? 'contact-button selected' : 'contact-button'} onClick={() => loadThread(c)}><span className="avatar">{c.display_name?.slice(0,1) || 'ک'}</span><span className="contact-copy"><b>{c.display_name}</b><small>{inboxByContact.get(c.id)?.latest.body || c.department || c.job_title || 'شروع گفت‌وگوی خصوصی'}</small></span><span className="contact-meta">{inboxByContact.get(c.id)?.latest && <time>{new Date(inboxByContact.get(c.id)!.latest.created_at).toLocaleDateString('fa-IR',{month:'numeric',day:'numeric'})}</time>}{Boolean(inboxByContact.get(c.id)?.unread) && <i>{inboxByContact.get(c.id)!.unread > 99 ? '99+' : inboxByContact.get(c.id)!.unread}</i>}</span></button>)}</aside>
+            <aside className="contact-list"><strong>گفت‌وگوها <small className="conversation-sort-hint">مرتب‌شده بر اساس آخرین پیام</small></strong><div className="contact-search"><Search size={16}/><input value={contactQuery} onChange={e => setContactQuery(e.target.value)} placeholder="جست‌وجوی نام یا متن پیام..." aria-label="جست‌وجوی همکار"/></div><div className="contact-filters" role="group" aria-label="فیلتر گفتگوها"><button type="button" className={contactFilter === 'all' ? 'active' : ''} onClick={() => setContactFilter('all')}>همه <b>{contactFilterCounts.all}</b></button><button type="button" className={contactFilter === 'unread' ? 'active' : ''} onClick={() => setContactFilter('unread')}>خوانده‌نشده <b>{contactFilterCounts.unread}</b></button><button type="button" className={contactFilter === 'messaged' ? 'active' : ''} onClick={() => setContactFilter('messaged')}>دارای پیام <b>{contactFilterCounts.messaged}</b></button><button type="button" className={contactFilter === 'new' ? 'active' : ''} onClick={() => setContactFilter('new')}>شروع گفتگو <b>{contactFilterCounts.new}</b></button></div>{sortedContacts.length ? sortedContacts.map(c => <button key={c.id} className={selectedContact?.id === c.id ? 'contact-button selected' : 'contact-button'} onClick={() => loadThread(c)}><span className="avatar">{c.display_name?.slice(0,1) || 'ک'}</span><span className="contact-copy"><b>{c.display_name}</b><small>{inboxByContact.get(c.id)?.latest ? (inboxByContact.get(c.id)!.latest.deleted_at ? 'این پیام حذف شده است' : inboxByContact.get(c.id)!.latest.body || (inboxByContact.get(c.id)!.latest.attachment_name ? '📎 پیوست فایل' : 'گفت‌وگوی خصوصی')) : c.department || c.job_title || 'شروع گفت‌وگوی خصوصی'}</small></span><span className="contact-meta">{inboxByContact.get(c.id)?.latest && <time>{new Date(inboxByContact.get(c.id)!.latest.created_at).toLocaleDateString('fa-IR',{month:'numeric',day:'numeric'})}</time>}{Boolean(inboxByContact.get(c.id)?.unread) && <i>{inboxByContact.get(c.id)!.unread > 99 ? '99+' : inboxByContact.get(c.id)!.unread}</i>}</span></button>) : <div className="contact-empty">{contactFilter === 'unread' ? 'گفت‌وگوی خوانده‌نشده‌ای وجود ندارد.' : contactFilter === 'messaged' ? 'هنوز گفت‌وگویی ثبت نشده است.' : contactFilter === 'new' ? 'همه همکاران قبلاً گفت‌وگو داشته‌اند.' : 'همکاری با این مشخصات پیدا نشد.'}</div>}</aside>
             <div className="chat-panel">
               {selectedContact ? <><div className="chat-heading"><div><strong>{selectedContact.display_name}</strong><small>{selectedContact.department || 'همکار بیمارستان مدنی'}</small></div><div className="thread-search"><Search size={15}/><input value={threadQuery} onChange={e => setThreadQuery(e.target.value)} placeholder="جست‌وجو در این گفت‌وگو..." aria-label="جست‌وجو در پیام‌های این گفتگو"/>{threadQuery && <button type="button" onClick={() => setThreadQuery('')} aria-label="پاک کردن جست‌وجو">×</button>}</div></div>
                 <div className="chat-messages">{threadLoading ? <div className="empty-chat">در حال بارگذاری گفت‌وگو...</div> : filteredThreadMessages.length ? filteredThreadMessages.map(m => <div key={m.id} className={m.sender_id === profile?.id ? 'chat-bubble mine' : 'chat-bubble'}>{m.body && <p className={m.deleted_at ? 'message-deleted-text' : undefined}>{m.body}</p>}{!m.deleted_at && m.attachment_path && <button type="button" className="message-attachment" onClick={() => openMessageAttachment(m)}><span>{m.attachment_type?.startsWith('image/') ? 'پیش‌نمایش تصویر' : 'فایل پیوست'}</span><b>{m.attachment_name || 'دریافت فایل'}</b><small>{m.attachment_size ? (m.attachment_size / 1024 / 1024).toFixed(2) + ' مگابایت' : ''}</small></button>}{m.sender_id === profile?.id && !m.deleted_at && <button type="button" className="message-delete-btn" disabled={busy} onClick={() => deleteOwnMessage(m)}>حذف پیام</button>}<small>{new Date(m.created_at).toLocaleString('fa-IR')}</small></div>) : <div className="empty-chat">{threadQuery ? 'پیامی با این عبارت پیدا نشد.' : 'هنوز پیامی در این گفت‌وگو وجود ندارد.'}</div>}</div>{attachmentPreview && <div className="attachment-preview-backdrop" role="presentation" onClick={() => setAttachmentPreview(null)}><section className="attachment-preview-modal" role="dialog" aria-modal="true" aria-label="پیش‌نمایش تصویر" onClick={e => e.stopPropagation()}><div><strong>{attachmentPreview.name}</strong><button type="button" className="icon-btn" aria-label="بستن پیش‌نمایش" onClick={() => setAttachmentPreview(null)}>×</button></div><img src={attachmentPreview.url} alt={attachmentPreview.name} /><small>این پیش‌نمایش از پیوند خصوصی و موقت استفاده می‌کند.</small></section></div>}
