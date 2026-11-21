@@ -65,6 +65,8 @@ function App() {
   const [attachmentPreview, setAttachmentPreview] = useState<{ url: string; name: string; kind: 'image' | 'pdf' | 'file'; mime?: string; size?: number; rows?: string[][]; sheetName?: string; truncated?: boolean; totalRows?: number; docText?: string; docTruncated?: boolean; gallery?: { url: string; name: string; path: string }[]; galleryIndex?: number } | null>(null)
   const [unreadCount, setUnreadCount] = useState(0)
   const [notifications, setNotifications] = useState<EmployeeNotification[]>([])
+  const [notificationReadFilter, setNotificationReadFilter] = useState<'all' | 'unread' | 'read'>('all')
+  const [notificationTypeFilter, setNotificationTypeFilter] = useState<'all' | EmployeeNotification['notification_type']>('all')
   const [auditEntries, setAuditEntries] = useState<AuditEntry[]>([])
   const [workShifts, setWorkShifts] = useState<WorkShift[]>([])
   const [shiftChangeRequests, setShiftChangeRequests] = useState<ShiftChangeRequest[]>([])
@@ -187,6 +189,11 @@ function App() {
   const publishedAnnouncementCount = announcements.filter(item => item.is_published).length
   const activityNotifications = notifications
   const unreadNotificationCount = notifications.filter(item => !item.read_at).length
+  const visibleNotifications = useMemo(() => activityNotifications.filter(item => {
+    const matchesReadState = notificationReadFilter === 'all' || (notificationReadFilter === 'unread' ? !item.read_at : Boolean(item.read_at))
+    const matchesType = notificationTypeFilter === 'all' || item.notification_type === notificationTypeFilter
+    return matchesReadState && matchesType
+  }), [activityNotifications, notificationReadFilter, notificationTypeFilter])
   const todayKey = dateKey(new Date())
   const myUpcomingShifts = useMemo(() => workShifts
     .filter(shift => shift.employee_id === profile?.id && shift.shift_date >= todayKey)
@@ -793,9 +800,17 @@ function App() {
         {!configured && <div className="notice"><div className="notice-icon"><Activity size={20} /></div><div><strong>اتصال پایگاه داده تنظیم نشده است</strong><p>برای فعال‌سازی ورود و ذخیره اطلاعات، متغیرهای Supabase را در تنظیمات محیط اجرا وارد کنید.</p></div></div>}
         {page === 'مرکز اعلان‌ها' && <section className="panel notification-center">
           <div className="panel-title"><div><h2>مرکز اعلان‌ها</h2><p>اعلان‌های ذخیره‌شده و همگام‌شده با حساب کاربری شما</p></div><div className="notification-panel-actions"><span className="count-pill">{unreadNotificationCount} خوانده‌نشده</span>{unreadNotificationCount > 0 && <button className="small-outline" onClick={markAllNotificationsRead}>خواندن همه</button>}</div></div>
-          {!userEmail ? <LoginPrompt onLogin={() => setShowLogin(true)} /> : activityNotifications.length === 0 ? <div className="empty-state"><Bell size={36}/><strong>اعلان تازه‌ای ندارید</strong><span>با دریافت پیام، بررسی درخواست یا انتشار اطلاعیه، اعلان در این بخش ذخیره می‌شود.</span></div> : <div className="notification-list">{activityNotifications.map(item => <article className={item.read_at ? 'notification-card is-read' : 'notification-card is-unread'} key={item.id}>
-            <div className={'notification-icon '+item.notification_type}><Bell size={17}/></div><div className="notification-copy"><div className="notification-title-row"><strong>{item.title}</strong>{!item.read_at && <span className="notification-unread-dot">جدید</span>}</div><p>{item.body}</p><small>{new Date(item.created_at).toLocaleString('fa-IR')}</small></div><button className="small-outline" onClick={async () => { await markNotificationRead(item); go(item.target_page) }}>مشاهده</button>
-          </article>)}</div>}
+          {!userEmail ? <LoginPrompt onLogin={() => setShowLogin(true)} /> : activityNotifications.length === 0 ? <div className="empty-state"><Bell size={36}/><strong>اعلان تازه‌ای ندارید</strong><span>با دریافت پیام، بررسی درخواست یا انتشار اطلاعیه، اعلان در این بخش ذخیره می‌شود.</span></div> : <>
+            <div className="notification-filters" aria-label="فیلتر وضعیت اعلان‌ها">
+              {([{ value: 'all', label: 'همه' }, { value: 'unread', label: 'خوانده‌نشده' }, { value: 'read', label: 'خوانده‌شده' }] as const).map(option => <button key={option.value} className={notificationReadFilter === option.value ? 'active' : ''} onClick={() => setNotificationReadFilter(option.value)}>{option.label}<b>{option.value === 'all' ? notifications.length : option.value === 'unread' ? unreadNotificationCount : notifications.length - unreadNotificationCount}</b></button>)}
+            </div>
+            <div className="notification-type-filters" aria-label="فیلتر نوع اعلان">
+              {([{ value: 'all', label: 'همه دسته‌ها' }, { value: 'direct_message', label: 'پیام‌ها' }, { value: 'exchange_request', label: 'درخواست‌ها' }, { value: 'shift_swap', label: 'تبادل شیفت' }, { value: 'announcement', label: 'اطلاعیه‌ها' }] as const).map(option => <button key={option.value} className={notificationTypeFilter === option.value ? 'active' : ''} onClick={() => setNotificationTypeFilter(option.value)}>{option.label}</button>)}
+            </div>
+            {visibleNotifications.length === 0 ? <div className="notification-filter-empty"><Bell size={25}/><strong>اعلانی با این فیلتر پیدا نشد</strong><span>فیلترها را تغییر دهید تا اعلان‌های دیگر نمایش داده شوند.</span><button className="small-outline" onClick={() => { setNotificationReadFilter('all'); setNotificationTypeFilter('all') }}>پاک‌کردن فیلترها</button></div> : <div className="notification-list">{visibleNotifications.map(item => <article className={item.read_at ? 'notification-card is-read' : 'notification-card is-unread'} key={item.id}>
+              <div className={'notification-icon '+item.notification_type}><Bell size={17}/></div><div className="notification-copy"><div className="notification-title-row"><strong>{item.title}</strong>{!item.read_at && <span className="notification-unread-dot">جدید</span>}</div><p>{item.body}</p><small>{new Date(item.created_at).toLocaleString('fa-IR')}</small></div><button className="small-outline" onClick={async () => { await markNotificationRead(item); go(item.target_page) }}>مشاهده</button>
+            </article>)}</div>}
+          </>}
         </section>}
         {page === 'خانه' && <>
           <section className="hero-card"><div className="hero-content"><span className="hero-tag">کنار هم، قوی‌تر</span><h2>یک جامعه؛ هزاران فرصت همکاری</h2><p>با همکاران خود ارتباط بگیرید، درخواست‌های همکاری ثبت کنید و از تازه‌ترین اطلاعیه‌ها باخبر شوید.</p><button onClick={() => go('همکاران')} className="hero-btn">مشاهده همکاران <ChevronLeft size={17} /></button></div><div className="hero-art"><div className="orbit orbit-one" /><div className="orbit orbit-two" /><div className="hero-building"><Building2 size={74} /><span>مدنی</span></div><div className="float-bubble bubble-a"><Users size={21} /></div><div className="float-bubble bubble-b"><HeartHandshake size={21} /></div></div></section>
