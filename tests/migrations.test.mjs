@@ -152,3 +152,13 @@ test('notification center loads persisted notifications and syncs read state in 
   assert.match(app, /\.update\(\{ read_at: readAt \}\)/);
   assert.match(app, /setNotifications\(current => current\.map/);
 });
+
+
+test('profile password change uses Supabase Auth and validates matching credentials', async () => {
+  const app = await readFile(new URL('../src/App.tsx', import.meta.url), 'utf8');
+  assert.match(app, /supabase\.auth\.updateUser\(\{ password: newPassword \}\)/);
+  assert.match(app, /newPassword\.length < 8/);
+  assert.match(app, /newPassword !== confirmNewPassword/);
+  assert.match(app, /type="password" autoComplete="new-password"/);
+  assert.match(app, /account-security-panel/);
+});
