@@ -1,16 +1,17 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react'
-import { Activity, ArrowLeftRight, Bell, Building2, CalendarDays, ChevronLeft, ClipboardList, HeartHandshake, Home, LogIn, LogOut, Menu, Search, ShieldCheck, UserRound, Users, X } from 'lucide-react'
+import { Activity, ArrowLeftRight, Bell, Building2, CalendarDays, ChevronLeft, ClipboardList, HeartHandshake, Home, LogIn, LogOut, Menu, Search, ShieldCheck, UserRound, Users, X, Megaphone } from 'lucide-react'
 import { supabase } from './lib/supabase'
 
-type Page = 'خانه' | 'همکاران' | 'درخواست تبادل' | 'درخواست‌های من' | 'پروفایل' | 'مدیریت درخواست‌ها'
+type Page = 'خانه' | 'همکاران' | 'درخواست تبادل' | 'درخواست‌های من' | 'پروفایل' | 'مدیریت درخواست‌ها' | 'اطلاعیه‌ها'
 type Profile = { id: string; display_name: string; department: string | null; job_title: string | null; role?: string }
 type ExchangeRequest = { id: string; employee_id?: string; request_type: string; from_unit: string; to_unit: string; note: string | null; status: string; created_at: string }
+type Announcement = { id: string; title: string; body: string; priority: 'normal' | 'important'; is_published: boolean; created_at: string; published_at: string | null }
 
 const units = ['اورژانس', 'داخلی', 'جراحی', 'ICU', 'آزمایشگاه', 'رادیولوژی', 'داروخانه', 'پذیرش', 'سایر']
 const nav: { label: Page; icon: typeof Home }[] = [
   { label: 'خانه', icon: Home }, { label: 'همکاران', icon: Users },
   { label: 'درخواست تبادل', icon: ArrowLeftRight }, { label: 'درخواست‌های من', icon: ClipboardList },
-  { label: 'پروفایل', icon: UserRound },
+  { label: 'پروفایل', icon: UserRound }, { label: 'اطلاعیه‌ها', icon: Megaphone },
 ]
 
 function App() {
@@ -24,6 +25,10 @@ function App() {
   const [colleagues, setColleagues] = useState<Profile[]>([])
   const [requests, setRequests] = useState<ExchangeRequest[]>([])
   const [employeeNames, setEmployeeNames] = useState<Record<string, string>>({})
+  const [announcements, setAnnouncements] = useState<Announcement[]>([])
+  const [announcementTitle, setAnnouncementTitle] = useState('')
+  const [announcementBody, setAnnouncementBody] = useState('')
+  const [announcementPriority, setAnnouncementPriority] = useState<'normal' | 'important'>('normal')
   const [query, setQuery] = useState('')
   const [kind, setKind] = useState('تبادل بخش')
   const [from, setFrom] = useState(units[0])
@@ -73,6 +78,9 @@ function App() {
       else setColleagues(peopleResult.data ?? [])
       if (requestResult.error) setError(requestResult.error.message)
       else setRequests(requestResult.data ?? [])
+      const { data: announcementData, error: announcementError } = await client.from('announcements').select('id,title,body,priority,is_published,created_at,published_at').order('created_at', { ascending: false })
+      if (active && announcementError) setError(announcementError.message)
+      if (active && announcementData) setAnnouncements(announcementData)
       const ids = [...new Set((requestResult.data ?? []).map((r: any) => r.employee_id))]
       if (ids.length) {
         const { data: names } = await client.from('employee_profiles').select('id,display_name').in('id', ids)
@@ -129,6 +137,40 @@ function App() {
     setBusy(false)
   }
 
+  const createAnnouncement = async (e: FormEvent) => {
+    e.preventDefault()
+    if (!supabase || !isAdmin || !profile) return
+    if (!announcementTitle.trim() || !announcementBody.trim()) { setError('عنوان و متن اطلاعیه را وارد کنید.'); return }
+    setBusy(true); setError(''); setMessage('')
+    const { data, error: insertError } = await supabase.from('announcements').insert({
+      title: announcementTitle.trim(), body: announcementBody.trim(), priority: announcementPriority,
+      created_by: profile.id, is_published: false,
+    }).select('id,title,body,priority,is_published,created_at,published_at').single()
+    if (insertError) setError('ثبت اطلاعیه انجام نشد. دسترسی مدیر و تنظیم پایگاه داده را بررسی کنید.')
+    else {
+      setAnnouncements(current => [data, ...current])
+      setAnnouncementTitle(''); setAnnouncementBody(''); setAnnouncementPriority('normal')
+      setMessage('اطلاعیه به‌صورت پیش‌نویس ذخیره شد.')
+    }
+    setBusy(false)
+  }
+
+  const toggleAnnouncement = async (item: Announcement) => {
+    if (!supabase || !isAdmin) return
+    setBusy(true); setError(''); setMessage('')
+    const publish = !item.is_published
+    const publishedAt = publish ? new Date().toISOString() : null
+    const { error: updateError } = await supabase.from('announcements').update({
+      is_published: publish, published_at: publishedAt,
+    }).eq('id', item.id)
+    if (updateError) setError('تغییر وضعیت انتشار انجام نشد.')
+    else {
+      setAnnouncements(current => current.map(a => a.id === item.id ? { ...a, is_published: publish, published_at: publishedAt } : a))
+      setMessage(publish ? 'اطلاعیه منتشر شد.' : 'اطلاعیه از حالت انتشار خارج شد.')
+    }
+    setBusy(false)
+  }
+
   const go = (next: Page) => { setPage(next); setMobileNav(false); setError('') }
 
   return <div className="app-shell">
@@ -165,6 +207,26 @@ function App() {
         {page === 'همکاران' && <section className="panel"><div className="panel-title"><div><h2>فهرست همکاران</h2><p>فهرست کارکنان فعال بیمارستان مدنی</p></div><span className="count-pill">{userEmail ? filtered.length : '—'} نفر</span></div>{!userEmail ? <LoginPrompt onLogin={() => setShowLogin(true)} /> : <><div className="search-box"><Search size={18} /><input value={query} onChange={e => setQuery(e.target.value)} placeholder="جست‌وجوی نام، سمت یا بخش..." /></div><div className="people-list">{filtered.map(c => <div className="person-row" key={c.id}><div className="avatar">{c.display_name?.slice(0, 1) || 'ک'}</div><div className="person-info"><strong>{c.display_name}</strong><span>{c.job_title || 'کارمند'}{c.department ? ' · بخش ' + c.department : ''}</span></div></div>)}</div>{filtered.length === 0 && <p className="demo-note">کارمند فعالی برای نمایش ثبت نشده است.</p>}</>}</section>}
         {page === 'درخواست تبادل' && <section className="panel form-panel"><div className="panel-title"><div><h2>درخواست تبادل بخش یا بیمارستان</h2><p>درخواست شما پس از ثبت برای بررسی مسئول مربوطه ارسال می‌شود.</p></div><div className="form-icon"><ArrowLeftRight /></div></div>{!userEmail ? <LoginPrompt onLogin={() => setShowLogin(true)} /> : <form onSubmit={submitRequest}><label>نوع درخواست</label><div className="choice-row"><button type="button" className={kind === 'تبادل بخش' ? 'choice selected' : 'choice'} onClick={() => setKind('تبادل بخش')}>تبادل بخش</button><button type="button" className={kind === 'تبادل بیمارستان' ? 'choice selected' : 'choice'} onClick={() => setKind('تبادل بیمارستان')}>تبادل بیمارستان</button></div><div className="field-grid"><div><label htmlFor="from">بخش / محل فعلی</label><select id="from" value={from} onChange={e => setFrom(e.target.value)}>{units.map(u => <option key={u}>{u}</option>)}</select></div><div><label htmlFor="to">{kind === 'تبادل بیمارستان' ? 'نام بیمارستان مقصد' : 'بخش موردنظر'}</label>{kind === 'تبادل بیمارستان' ? <input id="to" required value={to} onChange={e => setTo(e.target.value)} placeholder="نام بیمارستان مقصد را وارد کنید" /> : <select id="to" value={to} onChange={e => setTo(e.target.value)}>{units.map(u => <option key={u}>{u}</option>)}</select>}</div></div><label htmlFor="note">توضیحات و دلیل درخواست</label><textarea id="note" value={note} onChange={e => setNote(e.target.value)} placeholder="در صورت نیاز توضیحات تکمیلی را بنویسید..." rows={4} maxLength={1500} /><div className="form-actions"><span>اطلاعات درخواست فقط برای حساب شما و مدیران مجاز قابل مشاهده است.</span><button className="primary-btn" type="submit" disabled={busy}>{busy ? 'در حال ثبت...' : 'ثبت درخواست'} <ChevronLeft size={17} /></button></div></form>}</section>}
         {page === 'درخواست‌های من' && <section className="panel"><div className="panel-title"><div><h2>درخواست‌های من</h2><p>پیگیری درخواست‌های ثبت‌شده</p></div><button className="primary-btn" onClick={() => go('درخواست تبادل')}>درخواست جدید</button></div>{!userEmail ? <LoginPrompt onLogin={() => setShowLogin(true)} /> : myRequests.length === 0 ? <div className="empty-state"><ClipboardList size={36} /><strong>هنوز درخواستی ثبت نکرده‌اید</strong><span>درخواست تبادل بخش یا بیمارستان خود را ثبت کنید.</span><button className="primary-btn" onClick={() => go('درخواست تبادل')}>ثبت درخواست</button></div> : <div className="request-list">{myRequests.map(r => <div className="request-row" key={r.id}><div className="request-symbol"><ArrowLeftRight /></div><div className="request-info"><strong>{r.request_type}</strong><span>{r.from_unit} ← {r.to_unit}</span>{r.note && <small>{r.note}</small>}<small>{new Date(r.created_at).toLocaleDateString('fa-IR')}</small></div><span className={r.status === 'approved' ? 'status-approved' : r.status === 'rejected' ? 'status-rejected' : 'status-pending'}>{statusLabel(r.status)}</span></div>)}</div>}</section>}
+        {page === 'اطلاعیه‌ها' && <section className="panel">
+          <div className="panel-title"><div><h2>اطلاعیه‌های بیمارستان</h2><p>خبرها و پیام‌های رسمی برای کارکنان</p></div><span className="count-pill">{announcements.filter(a => a.is_published).length} منتشرشده</span></div>
+          {isAdmin && <form className="announcement-form" onSubmit={createAnnouncement}>
+            <h3>ثبت اطلاعیه جدید</h3>
+            <label htmlFor="announcement-title">عنوان اطلاعیه</label>
+            <input id="announcement-title" required maxLength={160} value={announcementTitle} onChange={e => setAnnouncementTitle(e.target.value)} placeholder="عنوان کوتاه و روشن" />
+            <label htmlFor="announcement-body">متن اطلاعیه</label>
+            <textarea id="announcement-body" required maxLength={5000} rows={4} value={announcementBody} onChange={e => setAnnouncementBody(e.target.value)} placeholder="متن اطلاعیه را بنویسید..." />
+            <label htmlFor="announcement-priority">اهمیت</label>
+            <select id="announcement-priority" value={announcementPriority} onChange={e => setAnnouncementPriority(e.target.value as 'normal' | 'important')}><option value="normal">عادی</option><option value="important">مهم</option></select>
+            <button className="primary-btn" type="submit" disabled={busy}>{busy ? 'در حال ذخیره...' : 'ذخیره پیش‌نویس'}</button>
+          </form>}
+          <div className="announcement-list">
+            {announcements.filter(a => isAdmin || a.is_published).map(a => <article className="announcement-card" key={a.id}>
+              <div className="announcement-head"><div><span className={a.priority === 'important' ? 'announcement-priority important' : 'announcement-priority'}>{a.priority === 'important' ? 'مهم' : 'اطلاعیه'}</span><h3>{a.title}</h3></div>{isAdmin && <span className={a.is_published ? 'status-approved' : 'status-pending'}>{a.is_published ? 'منتشرشده' : 'پیش‌نویس'}</span>}</div>
+              <p>{a.body}</p><div className="announcement-foot"><small>{new Date(a.published_at || a.created_at).toLocaleDateString('fa-IR')}</small>{isAdmin && <button className="small-outline" disabled={busy} onClick={() => toggleAnnouncement(a)}>{a.is_published ? 'لغو انتشار' : 'انتشار'}</button>}</div>
+            </article>)}
+            {announcements.filter(a => isAdmin || a.is_published).length === 0 && <div className="empty-state"><Megaphone size={36}/><strong>هنوز اطلاعیه‌ای منتشر نشده است</strong><span>اطلاعیه‌های جدید در این بخش نمایش داده می‌شوند.</span></div>}
+          </div>
+        </section>}
         {page === 'مدیریت درخواست‌ها' && <section className="panel"><div className="panel-title"><div><h2>مدیریت درخواست‌های تبادل</h2><p>بررسی و تعیین نتیجه درخواست‌های کارکنان</p></div><span className="count-pill">{requests.filter(r => r.status === 'pending').length} در انتظار</span></div>{!isAdmin ? <LoginPrompt onLogin={() => setShowLogin(true)} /> : requests.length === 0 ? <div className="empty-state"><ClipboardList size={36}/><strong>درخواستی برای بررسی وجود ندارد</strong></div> : <div className="request-list">{requests.map(r => <div className="request-row" key={r.id}><div className="request-symbol"><ArrowLeftRight/></div><div className="request-info"><strong>{r.request_type} · {employeeNames[r.employee_id || ''] || 'کارمند'}</strong><span>{r.from_unit} ← {r.to_unit}</span>{r.note && <small>{r.note}</small>}<small>{new Date(r.created_at).toLocaleDateString('fa-IR')}</small></div><span className={r.status === 'approved' ? 'status-approved' : r.status === 'rejected' ? 'status-rejected' : 'status-pending'}>{statusLabel(r.status)}</span>{r.status === 'pending' && <div className="review-actions"><button className="approve-btn" disabled={busy} onClick={() => reviewRequest(r.id, 'approved')}>تأیید</button><button className="reject-btn" disabled={busy} onClick={() => reviewRequest(r.id, 'rejected')}>رد</button></div>}</div>)}</div>}</section>}
         {page === 'پروفایل' && <section className="panel profile-panel"><div className="profile-avatar"><UserRound size={34} /></div><h2>{profile?.display_name || 'پروفایل کارمند'}</h2><p>{profile ? [profile.job_title, profile.department].filter(Boolean).join(' · ') : userEmail || 'برای مشاهده اطلاعات پروفایل وارد سامانه شوید.'}</p>{userEmail ? <button className="primary-btn" onClick={logout}><LogOut size={16} /> خروج از حساب</button> : <button className="primary-btn" onClick={() => setShowLogin(true)}>ورود کارکنان</button>}</section>}
         <footer className="footer">شهروند مدنی <span>·</span> سامانه جامعه دیجیتال کارکنان بیمارستان مدنی</footer>
