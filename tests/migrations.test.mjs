@@ -11,7 +11,7 @@ test('Supabase migrations have unique, chronological version prefixes', async ()
   assert.deepEqual(files, sorted, 'migration filenames must already be chronological');
   const versions = files.map((name) => name.split('_')[0]);
   assert.equal(new Set(versions).size, versions.length, 'migration versions must be unique');
-  assert.equal(files.length, 22, 'README setup checklist must match the migration count');
+  assert.equal(files.length, 23, 'README setup checklist must match the migration count');
 });
 
 test('attachment metadata validation is bound to the authenticated sender and recipient path', async () => {
@@ -476,4 +476,16 @@ test('exchange request management reports totals, outcomes, request types, and a
   assert.match(css, /\.exchange-report-grid/);
   assert.match(css, /\.exchange-report-card\.approved/);
   assert.match(readme, /20261122020000_exchange_request_review_tracking\.sql/);
+});
+
+
+test('personnel cases are private to the owner and authorized admins', async () => {
+  const sql = await readMigration('20261122030000_staff_personnel_cases.sql');
+  assert.match(sql, /create table if not exists public\\.personnel_cases/i);
+  assert.match(sql, /enable row level security/i);
+  assert.match(sql, /employee_id = auth\\.uid\\(\\)/i);
+  assert.match(sql, /public\\.is_citizen_madani_active_employee\\(\\)/i);
+  assert.match(sql, /employee_id = auth\\.uid\\(\\) or public\\.is_citizen_madani_admin\\(\\)/i);
+  assert.match(sql, /create policy "Admins review personnel cases"[\\s\\S]*?reviewed_by = auth\\.uid\\(\\)/i);
+  assert.match(sql, /Attachments are intentionally not supported/i);
 });
