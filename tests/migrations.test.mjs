@@ -62,7 +62,7 @@ test('inactive employees cannot read or delete private message attachments', asy
 
 test('same-slot shift swaps defer uniqueness checks and lock rows deterministically', async () => {
   const sql = await readMigration('20261121210000_safe_shift_swap_constraint.sql');
-  assert.match(sql, /alter constraint work_shift_employee_slot_unique\s+deferrable initially immediate/i);
+  assert.match(sql, /drop constraint work_shift_employee_slot_unique[\s\S]*?add constraint work_shift_employee_slot_unique\s+unique \(employee_id, shift_date, shift_type\)\s+deferrable initially immediate/i);
   assert.match(sql, /set constraints public\.work_shift_employee_slot_unique deferred/i);
   assert.match(sql, /set search_path = ''[\s\S]*?set constraints public\.work_shift_employee_slot_unique deferred/i);
   assert.match(sql, /where id in \(new\.from_shift_id, new\.to_shift_id\)\s+order by id\s+for update/i);
