@@ -5,3 +5,18 @@
 .reject-btn{background:#fff0ef;color:#b84e48}
 .review-actions button:disabled{opacity:.5;cursor:not-allowed}
 @media(max-width:600px){.request-row{flex-wrap:wrap}.review-actions{margin-right:auto}.request-info{flex:1;min-width:130px}}
+
+.announcement-form{display:flex;flex-direction:column;gap:10px;padding:17px;background:#f7faf9;border:1px solid #e4eeec;border-radius:12px;margin-bottom:20px}
+.announcement-form h3{font-size:14px;margin:0 0 4px}
+.announcement-form label{font-size:11px;color:#506b75}
+.announcement-form input,.announcement-form textarea,.announcement-form select{width:100%;border:1px solid #e1eaec;border-radius:9px;padding:11px;color:#385661;background:#fff;outline-color:#6aa7a5;font-size:12px}
+.announcement-form textarea{resize:vertical;line-height:1.9}
+.announcement-form .primary-btn{align-self:flex-start}
+.announcement-list{display:flex;flex-direction:column;gap:12px}
+.announcement-card{border:1px solid #e8eff0;border-radius:12px;padding:17px}
+.announcement-head,.announcement-foot{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.announcement-head h3{font-size:14px;margin:8px 0 0}
+.announcement-priority{font-size:10px;color:#267779;background:#eaf5f3;padding:5px 9px;border-radius:20px}
+.announcement-priority.important{color:#a36a22;background:#fff3df}
+.announcement-card>p{font-size:12px;line-height:2;color:#526e77;white-space:pre-wrap;margin:13px 0}
+.announcement-foot small{font-size:10px;color:#91a1a6}
