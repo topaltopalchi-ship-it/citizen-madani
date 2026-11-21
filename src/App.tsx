@@ -828,7 +828,7 @@ function App() {
 }
 
 function shiftTypeLabel(type: string) { return type === 'morning' ? 'صبح' : type === 'evening' ? 'عصر' : 'شب' }
-function auditActionLabel(action: string) { return action === 'employee_profile_updated' ? 'ویرایش اطلاعات کارمند' : action === 'exchange_request_reviewed' ? 'بررسی و تعیین وضعیت درخواست' : action === 'announcement_published' ? 'انتشار اطلاعیه' : action === 'announcement_unpublished' ? 'لغو انتشار اطلاعیه' : 'رویداد مدیریتی' }
+function auditActionLabel(action: string) { return action === 'employee_profile_updated' ? 'ویرایش اطلاعات کارمند' : action === 'exchange_request_reviewed' ? 'بررسی و تعیین وضعیت درخواست' : action === 'announcement_published' ? 'انتشار اطلاعیه' : action === 'announcement_unpublished' ? 'لغو انتشار اطلاعیه' : action === 'shift_swap_approved' ? 'تأیید جابه‌جایی شیفت' : action === 'shift_swap_rejected' ? 'رد درخواست جابه‌جایی شیفت' : 'رویداد مدیریتی' }
 function statusLabel(status: string) { return status === 'approved' ? 'تأیید شده' : status === 'rejected' ? 'رد شده' : 'در انتظار بررسی' }
 function LoginPrompt({ onLogin }: { onLogin: () => void }) { return <div className="empty-state"><ShieldCheck size={34} /><strong>ورود به سامانه الزامی است</strong><span>برای مشاهده اطلاعات کارکنان یا ثبت درخواست وارد حساب خود شوید.</span><button className="primary-btn" onClick={onLogin}>ورود کارکنان</button></div> }
 function Stat({ icon: Icon, value, label, hint }: any) { return <div className="stat-card"><div className="stat-icon"><Icon size={20} /></div><div><strong>{value}</strong><span>{label}</span><small>{hint}</small></div></div> }
