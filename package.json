@@ -16,7 +16,8 @@
     "react-dom": "latest",
     "lucide-react": "latest",
     "@supabase/supabase-js": "latest",
-    "xlsx": "latest"
+    "xlsx": "latest",
+    "mammoth": "latest"
   },
   "devDependencies": {
     "@types/react": "latest",
