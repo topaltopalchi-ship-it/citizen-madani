@@ -99,3 +99,10 @@ test('replayed realtime message inserts do not duplicate inbox unread counts', a
   assert.match(app, /loadedInbox\.forEach\(item => \{ if \(item\.recipient_id === userId\) seenIncomingMessageIds\.current\.add\(item\.id\) \}\)/);
   assert.match(app, /seenIncomingMessageIds\.current\.clear\(\)/);
 });
+
+test('realtime read updates for received messages reconcile the unread count', async () => {
+  const app = await readFile(new URL('../src/App.tsx', import.meta.url), 'utf8');
+  assert.match(app, /filter: `recipient_id=eq\.\$\{profile\.id\}`[\s\S]*?Reconcile unread count with the database/);
+  assert.match(app, /\.eq\('recipient_id', profile\.id\)[\s\S]*?\.is\('read_at', null\)[\s\S]*?\.is\('deleted_at', null\)/);
+  assert.match(app, /if \(!countError\) setUnreadCount\(count \?\? 0\)/);
+});
