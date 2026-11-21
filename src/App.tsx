@@ -575,8 +575,9 @@ function App() {
       : message
     setThreadMessages(current => current.map(markDeleted))
     setInboxMessages(current => current.map(markDeleted))
-    if (typeof attachmentPath === 'string' && attachmentPath) {
-      const { error: storageError } = await supabase.storage.from('employee-message-attachments').remove([attachmentPath])
+    const pathsToRemove = Array.isArray(attachmentPaths) ? attachmentPaths.filter((path): path is string => typeof path === 'string') : typeof attachmentPaths === 'string' && attachmentPaths ? [attachmentPaths] : []
+    if (pathsToRemove.length) {
+      const { error: storageError } = await supabase.storage.from('employee-message-attachments').remove(pathsToRemove)
       if (storageError) setError('پیام حذف شد؛ پاک‌سازی فایل پیوست به‌دلیل خطای ذخیره‌سازی کامل نشد.')
       else setMessage('پیام و پیوست آن حذف شدند.')
     } else setMessage('پیام حذف شد.')
