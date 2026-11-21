@@ -16,8 +16,7 @@ language sql
 stable
 security definer
 set search_path = ''
-as $
-  select exists (
+as $$1 (
     select 1 from storage.objects o
     where o.bucket_id = 'employee-message-attachments'
       and o.name = object_path
