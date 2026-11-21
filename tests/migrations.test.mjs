@@ -224,3 +224,15 @@ test('admin dashboard displays a live shift-type breakdown for the selected mont
   assert.match(css, /\.admin-shift-type-track i\.evening/);
   assert.match(css, /\.admin-shift-type-track i\.night/);
 });
+
+
+test('shift report exports filtered rows to a formatted Excel workbook', async () => {
+  const app = await readFile(new URL('../src/App.tsx', import.meta.url), 'utf8');
+  assert.match(app, /const exportShiftCalendarExcel = \(\) =>/);
+  assert.match(app, /XLSX\.utils\.json_to_sheet\(rows\)/);
+  assert.match(app, /XLSX\.utils\.book_append_sheet\(workbook, worksheet, 'گزارش شیفت'\)/);
+  assert.match(app, /XLSX\.writeFile\(workbook/);
+  assert.match(app, /onClick=\{exportShiftCalendarExcel\}/);
+  assert.match(app, /خروجی CSV/);
+  assert.match(app, /خروجی Excel/);
+});
