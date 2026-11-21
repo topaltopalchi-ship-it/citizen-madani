@@ -490,6 +490,14 @@ body{background:radial-gradient(ellipse at 12% 0%,#e4f2f1 0,transparent 34%),lin
 .attachment-picker input{display:none}
 .attachment-selected{display:inline-flex;align-items:center;gap:7px;max-width:100%;padding:6px 9px;border-radius:9px;background:#fff4e5;color:#8a632e;font-size:10px;overflow-wrap:anywhere}
 .attachment-selected button{border:0;background:none;color:#a65d45;font-size:17px;cursor:pointer}
+.attachment-selected{align-items:center;gap:8px;min-width:0;max-width:min(100%,260px);padding:7px 9px;border:1px solid #f0dfc5;box-shadow:0 3px 9px #8a632e10}
+.attachment-thumb{width:42px;height:42px;flex:0 0 42px;object-fit:cover;border-radius:8px;background:#f5eee4}
+.attachment-file-icon{width:42px;height:42px;flex:0 0 42px;display:grid;place-items:center;border-radius:8px;background:linear-gradient(145deg,#fff,#f3e8d8);color:#9a7040;font-size:9px;font-weight:900}
+.attachment-selected-copy{display:flex;flex-direction:column;gap:3px;min-width:0}
+.attachment-selected-copy b{max-width:155px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px}
+.attachment-selected-copy small{color:#9b886e;font-size:9px}
+.attachment-selected button{width:23px;height:23px;flex:0 0 23px;border-radius:50%;background:#fff;color:#a65d45;font-size:16px;line-height:1}
+
 .chat-compose-tools>small{color:#8a9da0;font-size:9px}
 .message-attachment{display:grid;gap:4px;max-width:100%;margin:7px 0;padding:10px 12px;border:1px solid #d5e8e3;border-radius:12px;background:linear-gradient(145deg,#f7fffc,#eaf6f2);color:#2b7069;text-align:right;cursor:pointer;box-shadow:0 3px 9px #234c580c}
 .message-attachment span,.message-attachment small{font-size:9px;color:#78928e}
