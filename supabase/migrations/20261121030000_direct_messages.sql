@@ -49,3 +49,18 @@ create policy "Recipients mark messages read"
 grant select, insert on public.direct_messages to authenticated;
 revoke update on public.direct_messages from authenticated;
 grant update (read_at) on public.direct_messages to authenticated;
+
+-- Enable Supabase Realtime delivery when the standard publication is available.
+do $$
+begin
+  if exists (select 1 from pg_publication where pubname = 'supabase_realtime')
+     and not exists (
+       select 1 from pg_publication_tables
+       where pubname = 'supabase_realtime'
+         and schemaname = 'public'
+         and tablename = 'direct_messages'
+     ) then
+    alter publication supabase_realtime add table public.direct_messages;
+  end if;
+end
+$$;
