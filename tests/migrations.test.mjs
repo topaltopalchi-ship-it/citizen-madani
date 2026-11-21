@@ -1,7 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readdir, readFile } from 'node:fs/promises';
-import { join } from 'node:path';
 
 const migrationsDir = new URL('../supabase/migrations/', import.meta.url);
 const readMigration = (name) => readFile(new URL(name, migrationsDir), 'utf8');
@@ -12,7 +11,7 @@ test('Supabase migrations have unique, chronological version prefixes', async ()
   assert.deepEqual(files, sorted, 'migration filenames must already be chronological');
   const versions = files.map((name) => name.split('_')[0]);
   assert.equal(new Set(versions).size, versions.length, 'migration versions must be unique');
-  assert.equal(files.length, 15, 'README setup checklist currently expects fifteen migrations');
+  assert.equal(files.length, 16, 'README setup checklist currently expects sixteen migrations');
 });
 
 test('attachment metadata validation is bound to the authenticated sender and recipient path', async () => {
@@ -49,4 +48,14 @@ test('shift-swap status decisions are written to the administrative audit log', 
   assert.match(sql, /'shift_swap_rejected'/i);
   assert.match(sql, /create trigger shift_change_requests_admin_audit[\s\S]*?after update of status/i);
   assert.match(sql, /insert into public\.admin_audit_log/i);
+});
+
+test('inactive employees cannot read or delete private message attachments', async () => {
+  const sql = await readMigration('20261121200000_active_employee_storage_access.sql');
+  const readPolicy = sql.split('create policy "Message participants read attachments"')[1]?.split(';')[0] ?? '';
+  const deletePolicy = sql.split('create policy "Message sender deletes own orphan attachments"')[1] ?? '';
+  assert.match(readPolicy, /public\.is_citizen_madani_active_employee\(\)/i);
+  assert.match(deletePolicy, /public\.is_citizen_madani_active_employee\(\)/i);
+  assert.match(sql, /drop policy if exists "Message participants read attachments"/i);
+  assert.match(sql, /drop policy if exists "Message sender deletes own orphan attachments"/i);
 });
