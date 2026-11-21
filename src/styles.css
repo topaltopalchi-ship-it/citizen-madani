@@ -887,3 +887,17 @@ body{background:radial-gradient(ellipse at 12% 0%,#e4f2f1 0,transparent 34%),lin
 .request-review-editor label{font-size:11px;color:#536e7a;font-weight:600}
 .request-review-editor textarea{width:100%;min-width:0;box-sizing:border-box;padding:9px 11px;border:1px solid #d5e2e8;border-radius:9px;background:#fff;color:#354d58;font:inherit;font-size:12px;line-height:1.8;resize:vertical}
 .request-review-note{display:block;margin-top:7px;padding:8px 10px;border-radius:9px;background:#edf7fb;color:#315f72!important;line-height:1.8}
+
+
+.exchange-report-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:10px;margin:16px 0 10px}
+.exchange-report-card{display:flex;flex-direction:column;gap:8px;min-height:82px;padding:13px 14px;border:1px solid #e3edf0;border-radius:14px;background:linear-gradient(145deg,#fff,#f5fafb);box-shadow:0 4px 12px rgba(32,76,91,.045)}
+.exchange-report-card span{font-size:11px;color:#71858d}
+.exchange-report-card strong{font-size:23px;line-height:1.2;color:#285466;font-variant-numeric:tabular-nums}
+.exchange-report-card.pending{background:linear-gradient(145deg,#fffaf0,#fff4dc);border-color:#f3e5c7}
+.exchange-report-card.pending strong{color:#a56c19}
+.exchange-report-card.approved{background:linear-gradient(145deg,#f2fbf6,#e8f7ee);border-color:#d8efdf}
+.exchange-report-card.approved strong{color:#278052}
+.exchange-report-card.rejected{background:linear-gradient(145deg,#fff7f6,#fff0ee);border-color:#f3dedb}
+.exchange-report-card.rejected strong{color:#b45d55}
+.exchange-report-breakdown{display:flex;flex-wrap:wrap;gap:9px 18px;margin:0 0 16px;padding:11px 13px;border-radius:11px;background:#f7fafb;color:#647982;font-size:11px}
+.exchange-report-breakdown strong{color:#345c6a}
