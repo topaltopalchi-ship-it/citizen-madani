@@ -216,6 +216,12 @@ function App() {
     return Array.from(counts.entries()).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'fa')).slice(0, 4)
   }, [calendarMonthShifts])
   const adminMaxDepartmentShifts = Math.max(1, ...adminDepartmentStats.map(([, count]) => count))
+  const adminShiftTypeStats = useMemo(() => ([
+    { key: 'morning', label: 'صبح', count: calendarMonthShifts.filter(shift => shift.shift_type === 'morning').length },
+    { key: 'evening', label: 'عصر', count: calendarMonthShifts.filter(shift => shift.shift_type === 'evening').length },
+    { key: 'night', label: 'شب', count: calendarMonthShifts.filter(shift => shift.shift_type === 'night').length },
+  ]), [calendarMonthShifts])
+  const adminMaxShiftTypeCount = Math.max(1, ...adminShiftTypeStats.map(item => item.count))
   const activeEmployeeCount = colleagues.filter(employee => employee.is_active !== false).length
   const inactiveEmployeeCount = colleagues.length - activeEmployeeCount
   const inboxByContact = useMemo(() => {
@@ -876,6 +882,9 @@ function App() {
             <div className="admin-dashboard-lower">
               <article className="admin-department-card"><div className="admin-subheading"><div><strong>توزیع شیفت در بخش‌ها</strong><small>چهار بخش با بیشترین شیفت در ماه انتخاب‌شده</small></div><button onClick={() => go('برنامه شیفت‌ها')}>گزارش کامل <ChevronLeft size={14}/></button></div>
                 {adminDepartmentStats.length ? <div className="admin-department-bars">{adminDepartmentStats.map(([department, count]) => <div className="admin-department-row" key={department}><div><span>{department}</span><b>{count}</b></div><div className="admin-department-track"><i style={{ width: (count / adminMaxDepartmentShifts * 100) + '%' }}/></div></div>)}</div> : <p className="admin-dashboard-empty">برای این ماه هنوز شیفتی ثبت نشده است.</p>}
+              </article>
+              <article className="admin-shift-types-card"><div className="admin-subheading"><div><strong>ترکیب شیفت‌های ماه</strong><small>تفکیک بر اساس نوبت کاری</small></div><CalendarDays size={17}/></div>
+                <div className="admin-shift-type-bars">{adminShiftTypeStats.map(item => <div className="admin-shift-type-row" key={item.key}><div><span>{item.label}</span><b>{item.count}</b></div><div className="admin-shift-type-track"><i className={item.key} style={{ width: (item.count / adminMaxShiftTypeCount * 100) + '%' }}/></div></div>)}</div>
               </article>
               <article className="admin-actions-card"><strong>دسترسی مدیریتی سریع</strong><small>مدیریت بخش‌های اصلی سامانه</small><button onClick={() => go('مدیریت درخواست‌ها')}><ClipboardList size={16}/> بررسی درخواست‌ها <ChevronLeft size={15}/></button><button onClick={() => go('مدیریت کارکنان')}><Users size={16}/> مدیریت کارکنان <ChevronLeft size={15}/></button><button onClick={() => go('سجل فعالیت‌ها')}><History size={16}/> مشاهده سجل فعالیت‌ها <ChevronLeft size={15}/></button><button onClick={() => go('اطلاعیه‌ها')}><Megaphone size={16}/> انتشار اطلاعیه <ChevronLeft size={15}/></button></article>
             </div>
