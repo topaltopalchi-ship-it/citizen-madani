@@ -1192,12 +1192,19 @@ function App() {
     setBusy(false)
   }
 
+  const refreshPersonnelCaseEvents = async (caseId: string) => {
+    if (!supabase) return
+    const { data, error: historyError } = await supabase.from('personnel_case_events').select('id,case_id,actor_id,event_type,old_status,new_status,note,created_at').eq('case_id', caseId).order('created_at', { ascending: false }).limit(100)
+    if (historyError) setError('تاریخچه پرونده به‌روزرسانی نشد.')
+    else if (data) setPersonnelCaseEvents(current => [...current.filter(item => item.case_id !== caseId), ...data])
+  }
+
   const reviewPersonnelCase = async (id: string, status: 'reviewing' | 'waiting_employee' | 'completed' | 'rejected') => {
     if (!supabase || !profile || !isAdmin || busy) return
     setBusy(true)
     const { error: updateError } = await supabase.from('personnel_cases').update({ status, reviewed_by: profile.id, reviewed_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq('id', id)
     if (updateError) setError('به‌روزرسانی پرونده انجام نشد.')
-    else setPersonnelCases(current => current.map(item => item.id === id ? { ...item, status, reviewed_by: profile.id, reviewed_at: new Date().toISOString() } : item))
+    else { setPersonnelCases(current => current.map(item => item.id === id ? { ...item, status, reviewed_by: profile.id, reviewed_at: new Date().toISOString() } : item)); await refreshPersonnelCaseEvents(id) }
     setBusy(false)
   }
 
@@ -1206,7 +1213,7 @@ function App() {
     setBusy(true)
     const { error: updateError } = await supabase.from('personnel_cases').update({ admin_response: response.trim(), reviewed_by: profile.id, reviewed_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq('id', id)
     if (updateError) setError('ثبت پاسخ پرونده انجام نشد.')
-    else setPersonnelCases(current => current.map(item => item.id === id ? { ...item, admin_response: response.trim(), reviewed_by: profile.id, reviewed_at: new Date().toISOString() } : item))
+    else { setPersonnelCases(current => current.map(item => item.id === id ? { ...item, admin_response: response.trim(), reviewed_by: profile.id, reviewed_at: new Date().toISOString() } : item)); await refreshPersonnelCaseEvents(id) }
     setBusy(false)
   }
 
