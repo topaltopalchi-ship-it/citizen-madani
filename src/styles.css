@@ -901,3 +901,6 @@ body{background:radial-gradient(ellipse at 12% 0%,#e4f2f1 0,transparent 34%),lin
 .exchange-report-card.rejected strong{color:#b45d55}
 .exchange-report-breakdown{display:flex;flex-wrap:wrap;gap:9px 18px;margin:0 0 16px;padding:11px 13px;border-radius:11px;background:#f7fafb;color:#647982;font-size:11px}
 .exchange-report-breakdown strong{color:#345c6a}
+
+.exchange-report-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}.exchange-report-actions .secondary-btn{white-space:nowrap}
+@media(max-width:520px){.exchange-report-actions{width:100%;justify-content:space-between}.exchange-report-actions .secondary-btn{flex:1}}
