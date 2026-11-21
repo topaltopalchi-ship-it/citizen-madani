@@ -881,3 +881,9 @@ body{background:radial-gradient(ellipse at 12% 0%,#e4f2f1 0,transparent 34%),lin
 .community-moderation-editor label{color:#80633a;font-size:10px}
 .community-moderation-editor textarea{width:100%;min-width:0;padding:9px;border:1px solid #e8d8bf;border-radius:8px;background:#fff;color:#465d65;font:inherit;font-size:11px;line-height:1.8;resize:vertical}
 .community-moderation-note{padding:7px 9px;margin:6px 0;border-radius:8px;background:#fff6e8;color:#85612c!important}
+
+
+.request-review-editor{display:flex;flex-direction:column;gap:7px;flex-basis:100%;width:100%;margin-top:10px;padding:11px;border:1px solid #dce8ed;border-radius:12px;background:#f5fafc}
+.request-review-editor label{font-size:11px;color:#536e7a;font-weight:600}
+.request-review-editor textarea{width:100%;min-width:0;box-sizing:border-box;padding:9px 11px;border:1px solid #d5e2e8;border-radius:9px;background:#fff;color:#354d58;font:inherit;font-size:12px;line-height:1.8;resize:vertical}
+.request-review-note{display:block;margin-top:7px;padding:8px 10px;border-radius:9px;background:#edf7fb;color:#315f72!important;line-height:1.8}
