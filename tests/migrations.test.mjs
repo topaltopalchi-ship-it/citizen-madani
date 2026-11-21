@@ -11,7 +11,7 @@ test('Supabase migrations have unique, chronological version prefixes', async ()
   assert.deepEqual(files, sorted, 'migration filenames must already be chronological');
   const versions = files.map((name) => name.split('_')[0]);
   assert.equal(new Set(versions).size, versions.length, 'migration versions must be unique');
-  assert.equal(files.length, 17, 'README setup checklist currently expects seventeen migrations');
+  assert.equal(files.length, 18, 'README setup checklist must match the migration count');
 });
 
 test('attachment metadata validation is bound to the authenticated sender and recipient path', async () => {
@@ -107,15 +107,12 @@ test('realtime read updates for received messages reconcile the unread count', a
   assert.match(app, /if \(!countError\) setUnreadCount\(count \?\? 0\)/);
 });
 
-test('notification center aggregates messages, request outcomes, shift outcomes and announcements', async () => {
+test('notification center uses persisted database notifications', async () => {
   const app = await readFile(new URL('../src/App.tsx', import.meta.url), 'utf8');
-  assert.match(app, /const activityNotifications = useMemo\(\(\) =>/);
-  assert.match(app, /kind: 'message', target: 'پیام‌ها'/);
-  assert.match(app, /kind: 'request', target: 'درخواست‌های من'/);
-  assert.match(app, /kind: 'shift', target: 'برنامه شیفت‌ها'/);
-  assert.match(app, /kind: 'announcement', target: 'اطلاعیه‌ها'/);
+  assert.match(app, /const activityNotifications = notifications/);
   assert.match(app, /page === 'مرکز اعلان‌ها'/);
   assert.match(app, /notification-center-trigger/);
+  assert.match(app, /unreadNotificationCount/);
 });
 
 test('employee notifications are durable, owner-scoped and trigger-generated', async () => {
