@@ -360,6 +360,23 @@ function App() {
         setThreadMessages(current => current.map(item => item.id === updated.id ? { ...item, read_at: updated.read_at, deleted_at: updated.deleted_at ?? item.deleted_at } : item))
         setInboxMessages(current => current.map(item => item.id === updated.id ? { ...item, read_at: updated.read_at, deleted_at: updated.deleted_at ?? item.deleted_at } : item))
       })
+      .on('postgres_changes', {
+        event: 'UPDATE', schema: 'public', table: 'direct_messages',
+        filter: `recipient_id=eq.${profile.id}`,
+      }, payload => {
+        const updated = payload.new as DirectMessage
+        setThreadMessages(current => current.map(item => item.id === updated.id ? { ...item, read_at: updated.read_at, deleted_at: updated.deleted_at ?? item.deleted_at } : item))
+        setInboxMessages(current => current.map(item => item.id === updated.id ? { ...item, read_at: updated.read_at, deleted_at: updated.deleted_at ?? item.deleted_at } : item))
+        // Reconcile unread count with the database so other open tabs stay in sync.
+        void client.from('direct_messages')
+          .select('id', { count: 'exact', head: true })
+          .eq('recipient_id', profile.id)
+          .is('read_at', null)
+          .is('deleted_at', null)
+          .then(({ count, error: countError }) => {
+            if (!countError) setUnreadCount(count ?? 0)
+          })
+      })
       .subscribe()
     return () => { void client.removeChannel(channel) }
   }, [profile?.id, selectedContact?.id])
