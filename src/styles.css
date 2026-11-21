@@ -478,3 +478,8 @@ body{background:radial-gradient(ellipse at 12% 0%,#e4f2f1 0,transparent 34%),lin
  .contact-copy small{max-width:210px}
  .contact-meta{min-width:32px}
 }
+
+
+/* Conversation ordering hint */
+.conversation-sort-hint{display:block;margin-top:4px;color:#8a9da0;font-size:9px;font-weight:500}
+.contact-list>strong{line-height:1.7}
