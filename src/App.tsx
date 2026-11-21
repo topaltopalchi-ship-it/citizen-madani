@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react'
+import { FormEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { Activity, ArrowLeftRight, Bell, Building2, CalendarDays, ChevronLeft, ClipboardList, HeartHandshake, Home, LogIn, LogOut, Menu, Search, ShieldCheck, UserRound, Users, X, Megaphone } from 'lucide-react'
 import { supabase } from './lib/supabase'
 
@@ -29,6 +29,9 @@ function App() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([])
   const [selectedContact, setSelectedContact] = useState<Profile | null>(null)
   const [threadMessages, setThreadMessages] = useState<DirectMessage[]>([])
+  const [threadLoading, setThreadLoading] = useState(false)
+  const [contactQuery, setContactQuery] = useState('')
+  const threadLoadSequence = useRef(0)
   const [messageDraft, setMessageDraft] = useState('')
   const [unreadCount, setUnreadCount] = useState(0)
   const [announcementTitle, setAnnouncementTitle] = useState('')
@@ -49,6 +52,9 @@ function App() {
   const filtered = useMemo(() => colleagues.filter(c =>
     [c.display_name, c.job_title, c.department].filter(Boolean).join(' ').toLowerCase().includes(query.toLowerCase())
   ), [colleagues, query])
+  const filteredContacts = useMemo(() => colleagues.filter(c => c.id !== profile?.id &&
+    [c.display_name, c.job_title, c.department].filter(Boolean).join(' ').toLowerCase().includes(contactQuery.toLowerCase())
+  ), [colleagues, profile?.id, contactQuery])
 
   useEffect(() => {
     if (!supabase) return
@@ -58,7 +64,7 @@ function App() {
     })
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       setUserEmail(session?.user.email ?? null)
-      if (!session) { setProfile(null); setRequests([]) }
+      if (!session) { setProfile(null); setRequests([]); setSelectedContact(null); setThreadMessages([]); setMessageDraft(''); setUnreadCount(0); threadLoadSequence.current += 1; setThreadLoading(false) }
     })
     return () => listener.subscription.unsubscribe()
   }, [])
@@ -136,7 +142,7 @@ function App() {
     if (!supabase) return
     const { error: logoutError } = await supabase.auth.signOut()
     if (logoutError) setError(logoutError.message)
-    else { setPage('خانه'); setMessage('از حساب کاربری خارج شدید.') }
+    else { setPage('خانه'); setSelectedContact(null); setThreadMessages([]); setMessageDraft(''); setContactQuery(''); setMessage('از حساب کاربری خارج شدید.') }
   }
 
   const submitRequest = async (e: FormEvent) => {
@@ -204,23 +210,28 @@ function App() {
 
   const loadThread = async (contact: Profile) => {
     if (!supabase || !profile) return
-    setSelectedContact(contact); setError('')
+    const sequence = ++threadLoadSequence.current
+    setSelectedContact(contact); setThreadMessages([]); setThreadLoading(true); setError('')
     const { data, error: loadError } = await supabase.from('direct_messages')
       .select('id,sender_id,recipient_id,body,created_at,read_at')
       .or(`and(sender_id.eq.${profile.id},recipient_id.eq.${contact.id}),and(sender_id.eq.${contact.id},recipient_id.eq.${profile.id})`)
       .order('created_at', { ascending: true })
-    if (loadError) { setError('بارگذاری گفت‌وگو انجام نشد.'); return }
-    setThreadMessages(data ?? [])
-    const unreadIds = (data ?? []).filter(m => m.recipient_id === profile.id && !m.read_at).map(m => m.id)
+    if (sequence !== threadLoadSequence.current) return
+    if (loadError) { setError('بارگذاری گفت‌وگو انجام نشد.'); setThreadLoading(false); return }
+    const loadedMessages = data ?? []
+    setThreadMessages(loadedMessages)
+    const unreadIds = loadedMessages.filter(m => m.recipient_id === profile.id && !m.read_at).map(m => m.id)
     if (unreadIds.length) {
-      const { error: readError } = await supabase.from('direct_messages').update({ read_at: new Date().toISOString() }).in('id', unreadIds)
+      const readAt = new Date().toISOString()
+      const { error: readError } = await supabase.from('direct_messages').update({ read_at: readAt }).in('id', unreadIds)
+      if (sequence !== threadLoadSequence.current) return
       if (readError) setError('پیام‌ها نمایش داده شدند اما وضعیت خوانده‌شدن ثبت نشد.')
       else {
-        const now = new Date().toISOString()
-        setThreadMessages(current => current.map(m => unreadIds.includes(m.id) ? { ...m, read_at: now } : m))
+        setThreadMessages(current => current.map(m => unreadIds.includes(m.id) ? { ...m, read_at: readAt } : m))
         setUnreadCount(current => Math.max(0, current - unreadIds.length))
       }
     }
+    if (sequence === threadLoadSequence.current) setThreadLoading(false)
   }
 
   const sendDirectMessage = async (e: FormEvent) => {
@@ -294,10 +305,10 @@ function App() {
         {page === 'پیام‌ها' && <section className="panel">
           <div className="panel-title"><div><h2>پیام‌رسان خصوصی کارکنان</h2><p>گفت‌وگوی مستقیم و محرمانه با همکاران</p></div><span className="count-pill">{unreadCount} خوانده‌نشده</span></div>
           {!userEmail ? <LoginPrompt onLogin={() => setShowLogin(true)} /> : <div className="messenger-layout">
-            <aside className="contact-list"><strong>انتخاب همکار</strong>{colleagues.filter(c => c.id !== profile?.id).map(c => <button key={c.id} className={selectedContact?.id === c.id ? 'contact-button selected' : 'contact-button'} onClick={() => loadThread(c)}><span className="avatar">{c.display_name?.slice(0,1) || 'ک'}</span><span><b>{c.display_name}</b><small>{c.department || c.job_title || 'کارمند'}</small></span></button>)}</aside>
+            <aside className="contact-list"><strong>انتخاب همکار</strong><div className="contact-search"><Search size={16}/><input value={contactQuery} onChange={e => setContactQuery(e.target.value)} placeholder="جست‌وجوی همکار..." aria-label="جست‌وجوی همکار"/></div>{filteredContacts.map(c => <button key={c.id} className={selectedContact?.id === c.id ? 'contact-button selected' : 'contact-button'} onClick={() => loadThread(c)}><span className="avatar">{c.display_name?.slice(0,1) || 'ک'}</span><span><b>{c.display_name}</b><small>{c.department || c.job_title || 'کارمند'}</small></span></button>)}</aside>
             <div className="chat-panel">
               {selectedContact ? <><div className="chat-heading"><strong>{selectedContact.display_name}</strong><small>{selectedContact.department || 'همکار بیمارستان مدنی'}</small></div>
-                <div className="chat-messages">{threadMessages.length ? threadMessages.map(m => <div key={m.id} className={m.sender_id === profile?.id ? 'chat-bubble mine' : 'chat-bubble'}><p>{m.body}</p><small>{new Date(m.created_at).toLocaleString('fa-IR')}</small></div>) : <div className="empty-chat">هنوز پیامی در این گفت‌وگو وجود ندارد.</div>}</div>
+                <div className="chat-messages">{threadLoading ? <div className="empty-chat">در حال بارگذاری گفت‌وگو...</div> : threadMessages.length ? threadMessages.map(m => <div key={m.id} className={m.sender_id === profile?.id ? 'chat-bubble mine' : 'chat-bubble'}><p>{m.body}</p><small>{new Date(m.created_at).toLocaleString('fa-IR')}</small></div>) : <div className="empty-chat">هنوز پیامی در این گفت‌وگو وجود ندارد.</div>}</div>
                 <form className="chat-compose" onSubmit={sendDirectMessage}><textarea value={messageDraft} onChange={e => setMessageDraft(e.target.value)} maxLength={4000} rows={2} placeholder="پیام خود را بنویسید..." /><button className="primary-btn" disabled={busy || !messageDraft.trim()}>{busy ? 'در حال ارسال...' : 'ارسال پیام'}</button></form>
               </> : <div className="empty-state"><Users size={34}/><strong>یک همکار را انتخاب کنید</strong><span>برای شروع گفت‌وگوی خصوصی، نام همکار را از فهرست انتخاب کنید.</span></div>}
             </div>
