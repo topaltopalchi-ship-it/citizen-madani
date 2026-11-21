@@ -19,6 +19,7 @@ declare
   v_type text;
   v_size_text text;
   v_size bigint;
+  v_total_size bigint := 0;
 begin
   if auth.uid() is null
      or p_sender_id <> auth.uid()
@@ -55,7 +56,9 @@ begin
     end if;
 
     v_size := v_size_text::bigint;
+    v_total_size := v_total_size + v_size;
     if v_size not between 1 and 10485760
+       or v_total_size > 10485760
        or v_path not like p_sender_id::text || '/' || p_recipient_id::text || '/%' then
       return false;
     end if;
