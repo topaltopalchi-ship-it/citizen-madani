@@ -598,3 +598,21 @@ body{background:radial-gradient(ellipse at 12% 0%,#e4f2f1 0,transparent 34%),lin
 .connection-status.retry-hint{border-color:#eadfbd;background:linear-gradient(135deg,#fffdf5,#fbf5e7);color:#80652c}
 .connection-status-dot{width:9px;height:9px;flex:0 0 9px;border-radius:50%;background:#d46d59;box-shadow:0 0 0 4px #d46d5918}
 @media(max-width:600px){.connection-status{align-items:flex-start;font-size:11px;padding:9px 11px}}
+
+/* Unified activity and notification center */
+.notification-center-trigger{position:relative}
+.notification-center-trigger>span{position:absolute;top:-5px;right:-5px;min-width:17px;height:17px;padding:0 4px;border:2px solid #fff;border-radius:20px;background:#d66b58;color:#fff;font-size:9px;font-weight:800;display:grid;place-items:center}
+.notification-list{display:flex;flex-direction:column;gap:9px}
+.notification-card{display:flex;align-items:center;gap:12px;padding:14px;border:1px solid #e7eff0;border-radius:14px;background:linear-gradient(135deg,#fff,#f9fcfb)}
+.notification-icon{width:40px;height:40px;flex:0 0 40px;border-radius:13px;display:grid;place-items:center;background:#eaf4f3;color:#17777a}
+.notification-icon.message{background:#eaf1ff;color:#416eaf}
+.notification-icon.request{background:#fff3e5;color:#a87536}
+.notification-icon.shift{background:#f0ebff;color:#7958a7}
+.notification-icon.announcement{background:#e9f6ef;color:#37805a}
+.notification-copy{min-width:0;flex:1}
+.notification-title-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.notification-copy strong{font-size:12px;color:#294b57}
+.notification-copy p{font-size:11px;line-height:1.8;color:#71868c;margin:5px 0;overflow-wrap:anywhere}
+.notification-copy small{font-size:10px;color:#9aabad}
+.notification-card>.small-outline{flex-shrink:0}
+@media(max-width:520px){.notification-card{align-items:flex-start;flex-wrap:wrap;padding:11px}.notification-icon{width:35px;height:35px;flex-basis:35px}.notification-copy{width:calc(100% - 50px)}.notification-card>.small-outline{margin-right:47px}}
