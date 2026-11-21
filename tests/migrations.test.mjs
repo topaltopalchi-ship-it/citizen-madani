@@ -116,6 +116,7 @@ test('notification center uses persisted database notifications', async () => {
 });
 
 test('notification center filters persisted alerts by read state and category', async () => {
+  const app = await readFile(new URL('../src/App.tsx', import.meta.url), 'utf8');
   assert.match(app, /notificationReadFilter/)
   assert.match(app, /notificationTypeFilter/)
   assert.match(app, /const visibleNotifications = useMemo/)
