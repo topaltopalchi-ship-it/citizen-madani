@@ -29,9 +29,9 @@ begin
   new.reviewed_at := now();
 
   if new.status = 'approved' then
-    -- Defer the employee/date/type uniqueness check until both assignments
-    -- have been exchanged within this same transaction.
-    set constraints work_shift_employee_slot_unique deferred;
+    -- Qualify the constraint because this SECURITY DEFINER function has an
+    -- intentionally empty search_path.
+    set constraints public.work_shift_employee_slot_unique deferred;
 
     -- Stable lock ordering prevents reciprocal swap requests from deadlocking.
     perform 1
