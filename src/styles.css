@@ -875,3 +875,9 @@ body{background:radial-gradient(ellipse at 12% 0%,#e4f2f1 0,transparent 34%),lin
 .compensation-card p{margin:0 0 11px;color:#637d85;font-size:11px;line-height:2;white-space:pre-wrap;overflow-wrap:anywhere}
 .compensation-card>small{display:block;color:#81949a;font-size:10px;line-height:1.9}
 @media(max-width:680px){.compensation-list{grid-template-columns:1fr}.compensation-form .field-grid{grid-template-columns:1fr}}
+
+
+.community-moderation-editor{display:flex;flex-direction:column;gap:6px;margin-top:10px;padding:10px;border-radius:10px;background:#fff8ed;border:1px solid #f0dfc5}
+.community-moderation-editor label{color:#80633a;font-size:10px}
+.community-moderation-editor textarea{width:100%;min-width:0;padding:9px;border:1px solid #e8d8bf;border-radius:8px;background:#fff;color:#465d65;font:inherit;font-size:11px;line-height:1.8;resize:vertical}
+.community-moderation-note{padding:7px 9px;margin:6px 0;border-radius:8px;background:#fff6e8;color:#85612c!important}
