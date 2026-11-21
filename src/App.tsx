@@ -269,7 +269,7 @@ function App() {
         if (active && auditData) setAuditEntries(auditData as AuditEntry[])
       } else if (active) setAuditEntries([])
       const [{ count }, inboxResult] = await Promise.all([
-        client.from('direct_messages').select('id', { count: 'exact', head: true }).eq('recipient_id', userId).is('read_at', null),
+        client.from('direct_messages').select('id', { count: 'exact', head: true }).eq('recipient_id', userId).is('read_at', null).is('deleted_at', null),
         client.from('direct_messages').select('id,sender_id,recipient_id,body,created_at,read_at,attachment_path,attachment_name,attachment_type,attachment_size,deleted_at').or(`sender_id.eq.${userId},recipient_id.eq.${userId}`).order('created_at', { ascending: false }).limit(300),
       ])
       if (active) { setUnreadCount(count ?? 0); if (inboxResult.data) setInboxMessages(inboxResult.data as DirectMessage[]) }
