@@ -226,6 +226,24 @@ test('admin dashboard displays a live shift-type breakdown for the selected mont
 });
 
 
+test('shift report compares department and employee shift counts with the previous month', async () => {
+  const app = await readFile(new URL('../src/App.tsx', import.meta.url), 'utf8');
+  const css = await readFile(new URL('../src/styles.css', import.meta.url), 'utf8');
+  assert.match(app, /const monthOverMonthComparison = useMemo/);
+  assert.match(app, /const previousKey =/);
+  assert.match(app, /const currentKey =/);
+  assert.match(app, /matchesFilters\(shift\)/);
+  assert.match(app, /departments: departments\.slice\(0, 5\)/);
+  assert.match(app, /employees: employees\.slice\(0, 5\)/);
+  assert.match(app, /مقایسه با ماه قبل/);
+  assert.match(app, /shift-compare-row/);
+  assert.match(app, /delta > 0 \? 'up' : delta < 0 \? 'down' : 'steady'/);
+  assert.match(css, /\.shift-compare-grid/);
+  assert.match(css, /\.shift-compare-row b\.up/);
+  assert.match(css, /\.shift-compare-row b\.down/);
+  assert.match(css, /@media\(max-width:620px\)\{\.shift-compare-grid/);
+});
+
 test('shift report shows a six-month trend using current report filters and zero-count months', async () => {
   const app = await readFile(new URL('../src/App.tsx', import.meta.url), 'utf8');
   const css = await readFile(new URL('../src/styles.css', import.meta.url), 'utf8');
