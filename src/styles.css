@@ -376,3 +376,22 @@ body{background:radial-gradient(ellipse at 12% 0%,#e4f2f1 0,transparent 34%),lin
  .calendar-shift{padding:3px 2px;font-size:8px}
  .shift-calendar-day>small{font-size:8px}
 }
+
+
+/* Monthly shift analytics */
+.shift-month-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin:0 0 13px}
+.shift-month-summary>div{display:grid;gap:5px;min-width:0;padding:12px;border:1px solid #e2eceb;border-radius:13px;background:linear-gradient(145deg,#fff,#f7fbfa);box-shadow:0 4px 12px #234c5808}
+.shift-month-summary span{font-size:10px;color:#71888e;font-weight:700}
+.shift-month-summary strong{font-size:23px;line-height:1.2;color:#285d66;font-weight:900;font-variant-numeric:tabular-nums}
+.shift-month-summary small{font-size:9px;color:#84989b}
+.shift-month-summary .shift-summary-total{background:linear-gradient(145deg,#eaf8f2,#eef7fb);border-color:#d5ebe3}
+.shift-month-summary .shift-summary-total strong{color:#21806f}
+.shift-summary-item.morning strong{color:#378b77}
+.shift-summary-item.evening strong{color:#b57a32}
+.shift-summary-item.night strong{color:#7965a9}
+.shift-department-report{display:grid;gap:9px;margin:0 0 15px;padding:12px 13px;border:1px solid #e5eded;border-radius:13px;background:#fff}
+.shift-department-report>strong{font-size:11px;color:#315b65}
+.shift-department-report>div{display:flex;flex-wrap:wrap;gap:7px}
+.shift-department-report span{display:flex;align-items:center;gap:8px;padding:6px 9px;border-radius:9px;background:#f2f7f7;color:#627d82;font-size:10px}
+.shift-department-report b{color:#27796f;font-size:11px}
+@media(max-width:600px){.shift-month-summary{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.shift-month-summary>div{padding:10px}.shift-month-summary strong{font-size:21px}}
