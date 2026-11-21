@@ -2,16 +2,17 @@ import { FormEvent, useEffect, useMemo, useState } from 'react'
 import { Activity, ArrowLeftRight, Bell, Building2, CalendarDays, ChevronLeft, ClipboardList, HeartHandshake, Home, LogIn, LogOut, Menu, Search, ShieldCheck, UserRound, Users, X, Megaphone } from 'lucide-react'
 import { supabase } from './lib/supabase'
 
-type Page = 'خانه' | 'همکاران' | 'درخواست تبادل' | 'درخواست‌های من' | 'پروفایل' | 'مدیریت درخواست‌ها' | 'اطلاعیه‌ها'
+type Page = 'خانه' | 'همکاران' | 'درخواست تبادل' | 'درخواست‌های من' | 'پروفایل' | 'مدیریت درخواست‌ها' | 'اطلاعیه‌ها' | 'پیام‌ها'
 type Profile = { id: string; display_name: string; department: string | null; job_title: string | null; role?: string }
 type ExchangeRequest = { id: string; employee_id?: string; request_type: string; from_unit: string; to_unit: string; note: string | null; status: string; created_at: string }
 type Announcement = { id: string; title: string; body: string; priority: 'normal' | 'important'; is_published: boolean; created_at: string; published_at: string | null }
+type DirectMessage = { id: string; sender_id: string; recipient_id: string; body: string; created_at: string; read_at: string | null }
 
 const units = ['اورژانس', 'داخلی', 'جراحی', 'ICU', 'آزمایشگاه', 'رادیولوژی', 'داروخانه', 'پذیرش', 'سایر']
 const nav: { label: Page; icon: typeof Home }[] = [
   { label: 'خانه', icon: Home }, { label: 'همکاران', icon: Users },
   { label: 'درخواست تبادل', icon: ArrowLeftRight }, { label: 'درخواست‌های من', icon: ClipboardList },
-  { label: 'پروفایل', icon: UserRound }, { label: 'اطلاعیه‌ها', icon: Megaphone },
+  { label: 'پروفایل', icon: UserRound }, { label: 'اطلاعیه‌ها', icon: Megaphone }, { label: 'پیام‌ها', icon: Bell },
 ]
 
 function App() {
@@ -26,6 +27,10 @@ function App() {
   const [requests, setRequests] = useState<ExchangeRequest[]>([])
   const [employeeNames, setEmployeeNames] = useState<Record<string, string>>({})
   const [announcements, setAnnouncements] = useState<Announcement[]>([])
+  const [selectedContact, setSelectedContact] = useState<Profile | null>(null)
+  const [threadMessages, setThreadMessages] = useState<DirectMessage[]>([])
+  const [messageDraft, setMessageDraft] = useState('')
+  const [unreadCount, setUnreadCount] = useState(0)
   const [announcementTitle, setAnnouncementTitle] = useState('')
   const [announcementBody, setAnnouncementBody] = useState('')
   const [announcementPriority, setAnnouncementPriority] = useState<'normal' | 'important'>('normal')
@@ -81,6 +86,8 @@ function App() {
       const { data: announcementData, error: announcementError } = await client.from('announcements').select('id,title,body,priority,is_published,created_at,published_at').order('created_at', { ascending: false })
       if (active && announcementError) setError(announcementError.message)
       if (active && announcementData) setAnnouncements(announcementData)
+      const { count } = await client.from('direct_messages').select('id', { count: 'exact', head: true }).eq('recipient_id', userId).is('read_at', null)
+      if (active) setUnreadCount(count ?? 0)
       const ids = [...new Set((requestResult.data ?? []).map((r: any) => r.employee_id))]
       if (ids.length) {
         const { data: names } = await client.from('employee_profiles').select('id,display_name').in('id', ids)
@@ -171,6 +178,39 @@ function App() {
     setBusy(false)
   }
 
+  const loadThread = async (contact: Profile) => {
+    if (!supabase || !profile) return
+    setSelectedContact(contact); setError('')
+    const { data, error: loadError } = await supabase.from('direct_messages')
+      .select('id,sender_id,recipient_id,body,created_at,read_at')
+      .or(`and(sender_id.eq.${profile.id},recipient_id.eq.${contact.id}),and(sender_id.eq.${contact.id},recipient_id.eq.${profile.id})`)
+      .order('created_at', { ascending: true })
+    if (loadError) { setError('بارگذاری گفت‌وگو انجام نشد.'); return }
+    setThreadMessages(data ?? [])
+    const unreadIds = (data ?? []).filter(m => m.recipient_id === profile.id && !m.read_at).map(m => m.id)
+    if (unreadIds.length) {
+      const { error: readError } = await supabase.from('direct_messages').update({ read_at: new Date().toISOString() }).in('id', unreadIds)
+      if (readError) setError('پیام‌ها نمایش داده شدند اما وضعیت خوانده‌شدن ثبت نشد.')
+      else {
+        const now = new Date().toISOString()
+        setThreadMessages(current => current.map(m => unreadIds.includes(m.id) ? { ...m, read_at: now } : m))
+        setUnreadCount(current => Math.max(0, current - unreadIds.length))
+      }
+    }
+  }
+
+  const sendDirectMessage = async (e: FormEvent) => {
+    e.preventDefault()
+    if (!supabase || !profile || !selectedContact || !messageDraft.trim()) return
+    setBusy(true); setError('')
+    const { data, error: sendError } = await supabase.from('direct_messages').insert({
+      sender_id: profile.id, recipient_id: selectedContact.id, body: messageDraft.trim(),
+    }).select('id,sender_id,recipient_id,body,created_at,read_at').single()
+    if (sendError) setError('ارسال پیام انجام نشد. اتصال و دسترسی حساب را بررسی کنید.')
+    else { setThreadMessages(current => [...current, data]); setMessageDraft(''); setMessage('پیام ارسال شد.') }
+    setBusy(false)
+  }
+
   const go = (next: Page) => { setPage(next); setMobileNav(false); setError('') }
 
   return <div className="app-shell">
@@ -226,6 +266,18 @@ function App() {
             </article>)}
             {announcements.filter(a => isAdmin || a.is_published).length === 0 && <div className="empty-state"><Megaphone size={36}/><strong>هنوز اطلاعیه‌ای منتشر نشده است</strong><span>اطلاعیه‌های جدید در این بخش نمایش داده می‌شوند.</span></div>}
           </div>
+        </section>}
+        {page === 'پیام‌ها' && <section className="panel">
+          <div className="panel-title"><div><h2>پیام‌رسان خصوصی کارکنان</h2><p>گفت‌وگوی مستقیم و محرمانه با همکاران</p></div><span className="count-pill">{unreadCount} خوانده‌نشده</span></div>
+          {!userEmail ? <LoginPrompt onLogin={() => setShowLogin(true)} /> : <div className="messenger-layout">
+            <aside className="contact-list"><strong>انتخاب همکار</strong>{colleagues.filter(c => c.id !== profile?.id).map(c => <button key={c.id} className={selectedContact?.id === c.id ? 'contact-button selected' : 'contact-button'} onClick={() => loadThread(c)}><span className="avatar">{c.display_name?.slice(0,1) || 'ک'}</span><span><b>{c.display_name}</b><small>{c.department || c.job_title || 'کارمند'}</small></span></button>)}</aside>
+            <div className="chat-panel">
+              {selectedContact ? <><div className="chat-heading"><strong>{selectedContact.display_name}</strong><small>{selectedContact.department || 'همکار بیمارستان مدنی'}</small></div>
+                <div className="chat-messages">{threadMessages.length ? threadMessages.map(m => <div key={m.id} className={m.sender_id === profile?.id ? 'chat-bubble mine' : 'chat-bubble'}><p>{m.body}</p><small>{new Date(m.created_at).toLocaleString('fa-IR')}</small></div>) : <div className="empty-chat">هنوز پیامی در این گفت‌وگو وجود ندارد.</div>}</div>
+                <form className="chat-compose" onSubmit={sendDirectMessage}><textarea value={messageDraft} onChange={e => setMessageDraft(e.target.value)} maxLength={4000} rows={2} placeholder="پیام خود را بنویسید..." /><button className="primary-btn" disabled={busy || !messageDraft.trim()}>{busy ? 'در حال ارسال...' : 'ارسال پیام'}</button></form>
+              </> : <div className="empty-state"><Users size={34}/><strong>یک همکار را انتخاب کنید</strong><span>برای شروع گفت‌وگوی خصوصی، نام همکار را از فهرست انتخاب کنید.</span></div>}
+            </div>
+          </div>}
         </section>}
         {page === 'مدیریت درخواست‌ها' && <section className="panel"><div className="panel-title"><div><h2>مدیریت درخواست‌های تبادل</h2><p>بررسی و تعیین نتیجه درخواست‌های کارکنان</p></div><span className="count-pill">{requests.filter(r => r.status === 'pending').length} در انتظار</span></div>{!isAdmin ? <LoginPrompt onLogin={() => setShowLogin(true)} /> : requests.length === 0 ? <div className="empty-state"><ClipboardList size={36}/><strong>درخواستی برای بررسی وجود ندارد</strong></div> : <div className="request-list">{requests.map(r => <div className="request-row" key={r.id}><div className="request-symbol"><ArrowLeftRight/></div><div className="request-info"><strong>{r.request_type} · {employeeNames[r.employee_id || ''] || 'کارمند'}</strong><span>{r.from_unit} ← {r.to_unit}</span>{r.note && <small>{r.note}</small>}<small>{new Date(r.created_at).toLocaleDateString('fa-IR')}</small></div><span className={r.status === 'approved' ? 'status-approved' : r.status === 'rejected' ? 'status-rejected' : 'status-pending'}>{statusLabel(r.status)}</span>{r.status === 'pending' && <div className="review-actions"><button className="approve-btn" disabled={busy} onClick={() => reviewRequest(r.id, 'approved')}>تأیید</button><button className="reject-btn" disabled={busy} onClick={() => reviewRequest(r.id, 'rejected')}>رد</button></div>}</div>)}</div>}</section>}
         {page === 'پروفایل' && <section className="panel profile-panel"><div className="profile-avatar"><UserRound size={34} /></div><h2>{profile?.display_name || 'پروفایل کارمند'}</h2><p>{profile ? [profile.job_title, profile.department].filter(Boolean).join(' · ') : userEmail || 'برای مشاهده اطلاعات پروفایل وارد سامانه شوید.'}</p>{userEmail ? <button className="primary-btn" onClick={logout}><LogOut size={16} /> خروج از حساب</button> : <button className="primary-btn" onClick={() => setShowLogin(true)}>ورود کارکنان</button>}</section>}
