@@ -436,7 +436,7 @@ function App() {
     if (updateError) setError('بررسی درخواست انجام نشد؛ ممکن است تخصیص شیفت تغییر کرده باشد.')
     else {
       setShiftChangeRequests(current => current.map(item => item.id === id ? { ...item, status, reviewed_at: new Date().toISOString() } : item))
-      const { data } = await supabase.from('work_shifts').select('id,employee_id,shift_date,shift_type,starts_at,ends_at,department,notes,created_at').gte('shift_date', new Date(new Date().getFullYear() - 1, new Date().getMonth(), 1).toISOString().slice(0, 10)).lte('shift_date', new Date(new Date().getFullYear() + 1, new Date().getMonth() + 1, 0).toISOString().slice(0, 10)).order('shift_date').order('starts_at').limit(1500)
+      const { data } = await supabase.from('work_shifts').select('id,employee_id,shift_date,shift_type,starts_at,ends_at,department,notes,created_at').gte('shift_date', dateKey(new Date(new Date().getFullYear() - 1, new Date().getMonth(), 1))).lte('shift_date', dateKey(new Date(new Date().getFullYear() + 1, new Date().getMonth() + 1, 0))).order('shift_date').order('starts_at').limit(1500)
       if (data) setWorkShifts(data as WorkShift[])
       setMessage(status === 'approved' ? 'جابه‌جایی تأیید و تخصیص دو شیفت به‌صورت خودکار عوض شد.' : 'درخواست جابه‌جایی رد شد.')
     }
