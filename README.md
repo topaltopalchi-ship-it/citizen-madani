@@ -21,13 +21,14 @@
 - اطلاعیه‌های عمومی حقوق، کارانه، اضافه‌کاری و مزایا با ذخیره پیش‌نویس، انتشار و بازگرداندن به پیش‌نویس توسط مدیران؛ کارکنان فقط اطلاعیه‌های منتشرشده را مشاهده می‌کنند.
 - امور رفاهی شامل قراردادهای طرف قرارداد، تخفیف‌ها و شرایط اقساطی با دسته‌بندی، اطلاعات تماس و تاریخ اعتبار.
 - ثبت خطا و تجربه به‌صورت متن یا صوت، همراه با پیگیری و پاسخ مدیر؛ رابط کاربری هشدار می‌دهد که اطلاعات قابل شناسایی بیماران ثبت نشود.
+- پرونده‌های اداری کارکنان شامل درخواست گواهی اشتغال، امور بیمه، مرخصی و مأموریت، آموزش، حقوق و سایر امور؛ ثبت‌کننده و مدیران مجاز دسترسی دارند و مدیر می‌تواند وضعیت را تغییر دهد و پاسخ ثبت کند. در نسخه فعلی بارگذاری مدارک فعال نیست.
 - سیاست‌های Row Level Security و محدودسازی مجوزهای سطح جدول و ستون
 
 ## راه‌اندازی محلی
 1. وابستگی‌ها را نصب کنید: `npm install`
 2. فایل `.env.example` را به `.env.local` کپی کنید.
 3. مقادیر `VITE_SUPABASE_URL` و `VITE_SUPABASE_PUBLISHABLE_KEY` را از پروژه Supabase خود وارد کنید.
-4. همه Migrationها را دقیقاً به‌ترتیب زمانی اجرا کنید: `202611200001_initial_schema.sql`، `20261121000000_employee_portal.sql`، `20261121010000_manager_review.sql`، `20261121020000_announcements.sql`، `20261121030000_direct_messages.sql`، `20261121100000_employee_management.sql`، `20261121110000_harden_table_grants.sql`، `20261121120000_active_account_access.sql`، `20261121130000_admin_audit_log.sql`، `20261121140000_work_shifts_and_swaps.sql`، `20261121150000_private_message_attachments.sql`، `20261121160000_sender_message_deletion.sql`، `20261121173000_multi_message_attachments.sql`، `20261121180000_multi_attachment_storage_rls.sql` و `20261121190000_shift_swap_audit.sql` و `20261121200000_active_employee_storage_access.sql` و `20261121210000_safe_shift_swap_constraint.sql` و `20261121220000_employee_notifications.sql` و `20261121230000_staff_community_and_compensation.sql` و `20261122000000_staff_welfare_partners.sql` و `20261122010000_staff_reports_and_audio.sql` و `20261122020000_exchange_request_review_tracking.sql`.
+4. همه Migrationها را دقیقاً به‌ترتیب زمانی اجرا کنید: `202611200001_initial_schema.sql`، `20261121000000_employee_portal.sql`، `20261121010000_manager_review.sql`، `20261121020000_announcements.sql`، `20261121030000_direct_messages.sql`، `20261121100000_employee_management.sql`، `20261121110000_harden_table_grants.sql`، `20261121120000_active_account_access.sql`، `20261121130000_admin_audit_log.sql`، `20261121140000_work_shifts_and_swaps.sql`، `20261121150000_private_message_attachments.sql`، `20261121160000_sender_message_deletion.sql`، `20261121173000_multi_message_attachments.sql`، `20261121180000_multi_attachment_storage_rls.sql` و `20261121190000_shift_swap_audit.sql` و `20261121200000_active_employee_storage_access.sql` و `20261121210000_safe_shift_swap_constraint.sql` و `20261121220000_employee_notifications.sql` و `20261121230000_staff_community_and_compensation.sql` و `20261122000000_staff_welfare_partners.sql` و `20261122010000_staff_reports_and_audio.sql` و `20261122020000_exchange_request_review_tracking.sql` و `20261122030000_staff_personnel_cases.sql`.
 5. برنامه را اجرا کنید: `npm run dev`
 
 ## ایجاد حساب کارکنان
@@ -72,7 +73,7 @@ where id = '<AUTH_USER_UUID>';
 این پروژه هنوز به سرویس میزبانی خاصی متصل نشده است. ساخت موفق GitHub Actions به معنی انتشار آنلاین یا اجرای Migrationها در Supabase نیست.
 
 ## چک‌لیست پیش از بهره‌برداری
-- [ ] اجرای هر بیست‌ودو Migration به‌ترتیب زمانی در پروژه Supabase مقصد
+- [ ] اجرای هر بیست‌وسه Migration به‌ترتیب زمانی در پروژه Supabase مقصد
 - [ ] بررسی فعال بودن RLS روی همه جدول‌ها و تست دسترسی با حساب کارمند و مدیر
 - [ ] ایجاد حساب‌ها فقط از مسیر دعوت/ایجاد حساب توسط مسئول مجاز
 - [ ] تکمیل پروفایل کارکنان و تأیید نقش مدیر از طریق SQL Editor
