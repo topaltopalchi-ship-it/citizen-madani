@@ -11,7 +11,7 @@ test('Supabase migrations have unique, chronological version prefixes', async ()
   assert.deepEqual(files, sorted, 'migration filenames must already be chronological');
   const versions = files.map((name) => name.split('_')[0]);
   assert.equal(new Set(versions).size, versions.length, 'migration versions must be unique');
-  assert.equal(files.length, 23, 'README setup checklist must match the migration count');
+  assert.equal(files.length, 24, 'README setup checklist must match the migration count');
 });
 
 test('attachment metadata validation is bound to the authenticated sender and recipient path', async () => {
@@ -488,4 +488,15 @@ test('personnel cases are private to the owner and authorized admins', async () 
   assert.match(sql, /employee_id = auth\\.uid\\(\\) or public\\.is_citizen_madani_admin\\(\\)/i);
   assert.match(sql, /create policy "Admins review personnel cases"[\\s\\S]*?reviewed_by = auth\\.uid\\(\\)/i);
   assert.match(sql, /Attachments are intentionally not supported/i);
+});
+
+
+test('personnel case audit history is append-only for authenticated clients', async () => {
+  const sql = await readMigration('20261122040000_personnel_case_audit.sql');
+  assert.match(sql, /create table if not exists public\\.personnel_case_events/i);
+  assert.match(sql, /enable row level security/i);
+  assert.match(sql, /grant select on public\\.personnel_case_events to authenticated/i);
+  assert.match(sql, /create policy "Case owners and admins read case history"/i);
+  assert.match(sql, /security definer[\\s\\S]*?set search_path = public/i);
+  assert.match(sql, /after insert or update of status, admin_response on public\\.personnel_cases/i);
 });
