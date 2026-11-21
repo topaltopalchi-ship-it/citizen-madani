@@ -181,3 +181,16 @@ test('profile displays account identity, role, organization, and active status',
   assert.match(app, /profile\?\.is_active === false/);
   assert.match(app, /profile-details-grid/);
 });
+
+
+test('personal settings persist page, notification filter, and compact layout preferences', async () => {
+  const app = await readFile(new URL('../src/App.tsx', import.meta.url), 'utf8');
+  const css = await readFile(new URL('../src/styles.css', import.meta.url), 'utf8');
+  assert.match(app, /تنظیمات شخصی/);
+  assert.match(app, /citizen-madani-home-page/);
+  assert.match(app, /citizen-madani-notification-filter/);
+  assert.match(app, /citizen-madani-compact/);
+  assert.match(app, /setNotificationReadFilter\(defaultNotificationFilter\)/);
+  assert.match(css, /\.compact-mode/);
+  assert.match(css, /\.settings-switch/);
+});
