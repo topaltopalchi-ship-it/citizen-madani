@@ -70,8 +70,21 @@ where id = '<AUTH_USER_UUID>';
 - [ ] تهیه نسخه پشتیبان و تعیین مسئول نگهداری و پاسخ‌گویی به رخدادها
 - [ ] بازبینی امنیتی نهایی توسط مسئول فناوری اطلاعات و اخذ تأیید سازمان
 
+## آزمون یکپارچه دیتابیس محلی
+برای اجرای واقعی Migrationها و تست PostgreSQL، Docker و Supabase CLI لازم است:
+
+1. نصب Supabase CLI مطابق مستندات رسمی
+2. اجرای `supabase start`
+3. اجرای `supabase db reset` برای ساخت دیتابیس تمیز و اعمال همه Migrationها
+4. اجرای `supabase test db` برای آزمون جابه‌جایی واقعی دو شیفت هم‌نوع و بررسی Constraint و هویت مدیر
+5. در پایان اجرای `supabase stop --no-backup`
+
+GitHub Actions این مراحل را در job جداگانه `database-integration` اجرا می‌کند. این آزمون‌ها روی دیتابیس محلی و موقت CI هستند و هیچ تغییری در پروژه Supabase عملیاتی ایجاد نمی‌کنند.
+
 ## دستورات
 - `npm run dev` — اجرای محیط توسعه
 - `npm test` — اجرای تست‌های خودکار کنترل Migration و امنیت پیوست‌ها
 - `npm run build` — بررسی TypeScript و ساخت نسخه انتشار
 - `npm run preview` — پیش‌نمایش نسخه ساخته‌شده
+- `supabase db reset` — بازسازی دیتابیس محلی و اجرای Migrationها
+- `supabase test db` — اجرای تست‌های یکپارچه PostgreSQL
