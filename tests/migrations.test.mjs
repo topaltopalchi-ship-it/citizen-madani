@@ -236,3 +236,14 @@ test('shift report exports filtered rows to a formatted Excel workbook', async (
   assert.match(app, /خروجی CSV/);
   assert.match(app, /خروجی Excel/);
 });
+
+
+test('shift report compares workload across active employees, including zero-shift staff', async () => {
+  const app = await readFile(new URL('../src/App.tsx', import.meta.url), 'utf8');
+  assert.match(app, /const employeeWorkloadStats = useMemo/);
+  assert.match(app, /person\.is_active !== false/);
+  assert.match(app, /counts\.get\(person\.id\) \|\| 0/);
+  assert.match(app, /توزیع بار کاری کارکنان/);
+  assert.match(app, /میانگین شیفت در بازه و فیلتر فعلی/);
+  assert.match(app, /نزدیک میانگین/);
+});
