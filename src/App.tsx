@@ -1,10 +1,10 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react'
-import { Activity, ArrowLeftRight, Bell, Building2, CalendarDays, ChevronLeft, ClipboardList, Download, FileText, HeartHandshake, Home, LogIn, LogOut, Menu, Search, ShieldCheck, UserRound, Users, X, Megaphone, History, Settings } from 'lucide-react'
+import { Activity, ArrowLeftRight, Bell, Building2, CalendarDays, ChevronLeft, ClipboardList, Download, FileText, HeartHandshake, Home, LogIn, LogOut, Menu, Search, ShieldCheck, UserRound, Users, X, Megaphone, History, Settings, Mic, Square, AlertCircle, Lightbulb, Play } from 'lucide-react'
 import * as XLSX from 'xlsx'
 import mammoth from 'mammoth'
 import { supabase } from './lib/supabase'
 
-type Page = 'خانه' | 'همکاران' | 'درخواست تبادل' | 'درخواست‌های من' | 'پروفایل' | 'مدیریت درخواست‌ها' | 'مدیریت کارکنان' | 'سجل فعالیت‌ها' | 'برنامه شیفت‌ها' | 'اطلاعیه‌ها' | 'پیام‌ها' | 'مرکز اعلان‌ها' | 'تنظیمات شخصی'
+type Page = 'خانه' | 'همکاران' | 'درخواست تبادل' | 'درخواست‌های من' | 'پروفایل' | 'مدیریت درخواست‌ها' | 'مدیریت کارکنان' | 'سجل فعالیت‌ها' | 'برنامه شیفت‌ها' | 'اطلاعیه‌ها' | 'پیام‌ها' | 'مرکز اعلان‌ها' | 'تنظیمات شخصی' | 'ثبت خطا و تجربه'
 type Profile = { id: string; display_name: string; department: string | null; job_title: string | null; role?: string; is_active?: boolean }
 type ExchangeRequest = { id: string; employee_id?: string; request_type: string; from_unit: string; to_unit: string; note: string | null; status: string; created_at: string }
 type Announcement = { id: string; title: string; body: string; priority: 'normal' | 'important'; is_published: boolean; created_at: string; published_at: string | null }
@@ -23,7 +23,7 @@ function dateKey(date: Date) {
 const nav: { label: Page; icon: typeof Home }[] = [
   { label: 'خانه', icon: Home }, { label: 'همکاران', icon: Users }, { label: 'برنامه شیفت‌ها', icon: CalendarDays },
   { label: 'درخواست تبادل', icon: ArrowLeftRight }, { label: 'درخواست‌های من', icon: ClipboardList },
-  { label: 'پروفایل', icon: UserRound }, { label: 'تنظیمات شخصی', icon: Settings }, { label: 'اطلاعیه‌ها', icon: Megaphone }, { label: 'پیام‌ها', icon: Bell }, { label: 'مرکز اعلان‌ها', icon: Activity },
+  { label: 'پروفایل', icon: UserRound }, { label: 'تنظیمات شخصی', icon: Settings }, { label: 'اطلاعیه‌ها', icon: Megaphone }, { label: 'پیام‌ها', icon: Bell }, { label: 'مرکز اعلان‌ها', icon: Activity }, { label: 'ثبت خطا و تجربه', icon: AlertCircle },
 ]
 
 function App() {
@@ -69,7 +69,7 @@ function App() {
   }, [messageAttachmentPreviews])
   const [attachmentPreview, setAttachmentPreview] = useState<{ url: string; name: string; kind: 'image' | 'pdf' | 'file'; mime?: string; size?: number; rows?: string[][]; sheetName?: string; truncated?: boolean; totalRows?: number; docText?: string; docTruncated?: boolean; gallery?: { url: string; name: string; path: string }[]; galleryIndex?: number } | null>(null)
   const [unreadCount, setUnreadCount] = useState(0)
-  const [notifications, setNotifications] = useState<EmployeeNotification[]>([])
+  const [notifications, setNotifications] = useState<EmployeeNotification[]>([])\n  const [staffReports, setStaffReports] = useState<any[]>([])\n  const [reportType, setReportType] = useState<'error' | 'experience'>('error')\n  const [reportTitle, setReportTitle] = useState('')\n  const [reportBody, setReportBody] = useState('')\n  const [reportAudio, setReportAudio] = useState<Blob | null>(null)\n  const [reportAudioUrl, setReportAudioUrl] = useState('')\n  const [recording, setRecording] = useState(false)\n  const [reportAudioLinks, setReportAudioLinks] = useState<Record<string, string>>({})\n  const recorderRef = useRef<MediaRecorder | null>(null)\n  const audioChunksRef = useRef<Blob[]>([])
   const [notificationReadFilter, setNotificationReadFilter] = useState<'all' | 'unread' | 'read'>('all')
   const [notificationTypeFilter, setNotificationTypeFilter] = useState<'all' | EmployeeNotification['notification_type']>('all')
   const [auditEntries, setAuditEntries] = useState<AuditEntry[]>([])
@@ -452,7 +452,7 @@ function App() {
           setInboxMessages(loadedInbox)
         }
       }
-      const { data: notificationData, error: notificationError } = await client.from('employee_notifications').select('id,recipient_id,notification_type,title,body,target_page,source_key,created_at,read_at').order('created_at', { ascending: false }).limit(100)
+      const { data: reportData, error: reportError } = await client.from('staff_reports').select('id,reporter_id,report_type,title,body,department,occurred_at,audio_path,status,admin_response,created_at').order('created_at', { ascending: false }).limit(200)\n      if (active && reportError) setError('بارگذاری گزارش‌ها انجام نشد؛ Migration ثبت خطا و تجربه را بررسی کنید.')\n      if (active && reportData) setStaffReports(reportData)\n      const { data: notificationData, error: notificationError } = await client.from('employee_notifications').select('id,recipient_id,notification_type,title,body,target_page,source_key,created_at,read_at').order('created_at', { ascending: false }).limit(100)
       if (active && notificationError) setError('بارگذاری اعلان‌ها انجام نشد؛ Migration مرکز اعلان‌ها را بررسی کنید.')
       if (active && notificationData) setNotifications(notificationData as EmployeeNotification[])
       const ids = [...new Set((requestResult.data ?? []).map((r: any) => r.employee_id))]
@@ -920,7 +920,81 @@ function App() {
     }
   }
 
-  const go = (next: Page) => { setPage(next); setMobileNav(false); setError(''); if (next === 'مرکز اعلان‌ها') setNotificationReadFilter(defaultNotificationFilter) }
+
+  const startReportRecording = async () => {
+    if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
+      setError('ضبط صدا در این مرورگر پشتیبانی نمی‌شود؛ می‌توانید گزارش متنی ثبت کنید.'); return
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const preferred = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4'].find(type => MediaRecorder.isTypeSupported(type))
+      const recorder = new MediaRecorder(stream, preferred ? { mimeType: preferred } : undefined)
+      audioChunksRef.current = []
+      recorder.ondataavailable = event => { if (event.data.size) audioChunksRef.current.push(event.data) }
+      recorder.onstop = () => {
+        const blob = new Blob(audioChunksRef.current, { type: recorder.mimeType || 'audio/webm' })
+        setReportAudio(blob)
+        setReportAudioUrl(URL.createObjectURL(blob))
+        stream.getTracks().forEach(track => track.stop())
+      }
+      recorderRef.current = recorder
+      recorder.start()
+      setRecording(true); setError('')
+    } catch { setError('دسترسی به میکروفون ممکن نشد؛ مجوز میکروفون مرورگر را بررسی کنید.') }
+  }
+
+  const stopReportRecording = () => {
+    if (recorderRef.current?.state === 'recording') recorderRef.current.stop()
+    setRecording(false)
+  }
+
+  const submitStaffReport = async (event: FormEvent) => {
+    event.preventDefault()
+    if (!supabase || !profile || !reportTitle.trim() || !reportBody.trim() || busy) return
+    setBusy(true); setError(''); setMessage('')
+    let uploadedPath: string | null = null
+    try {
+      if (reportAudio) {
+        if (reportAudio.size > 10 * 1024 * 1024) throw new Error('حجم فایل صوتی بیش از ۱۰ مگابایت است.')
+        const extension = reportAudio.type.includes('mp4') ? 'mp4' : reportAudio.type.includes('ogg') ? 'ogg' : 'webm'
+        uploadedPath = profile.id + '/' + crypto.randomUUID() + '.' + extension
+        const { error: uploadError } = await supabase.storage.from('staff-report-audio').upload(uploadedPath, reportAudio, { contentType: reportAudio.type || 'audio/webm', upsert: false })
+        if (uploadError) throw new Error('بارگذاری فایل صوتی انجام نشد؛ Migration ذخیره‌سازی صوتی را اجرا کنید.')
+      }
+      const { data, error: insertError } = await supabase.from('staff_reports').insert({
+        reporter_id: profile.id, report_type: reportType, title: reportTitle.trim(), body: reportBody.trim(),
+        department: profile.department, audio_path: uploadedPath,
+      }).select('id,reporter_id,report_type,title,body,department,occurred_at,audio_path,status,admin_response,created_at').single()
+      if (insertError) throw new Error('ثبت گزارش انجام نشد؛ دسترسی پایگاه داده را بررسی کنید.')
+      setStaffReports(current => [data, ...current])
+      setReportTitle(''); setReportBody(''); setReportAudio(null)
+      if (reportAudioUrl) URL.revokeObjectURL(reportAudioUrl)
+      setReportAudioUrl('')
+      setMessage('گزارش شما با موفقیت و به‌صورت محرمانه ثبت شد.')
+    } catch (err) {
+      if (uploadedPath) await supabase.storage.from('staff-report-audio').remove([uploadedPath])
+      setError(err instanceof Error ? err.message : 'ثبت گزارش انجام نشد.')
+    } finally { setBusy(false) }
+  }
+
+  const playStaffReportAudio = async (path: string, id: string) => {
+    if (!supabase) return
+    const { data, error: linkError } = await supabase.storage.from('staff-report-audio').createSignedUrl(path, 300)
+    if (linkError || !data?.signedUrl) { setError('دریافت فایل صوتی ممکن نیست؛ سطح دسترسی گزارش را بررسی کنید.'); return }
+    setReportAudioLinks(current => ({ ...current, [id]: data.signedUrl }))
+  }
+
+  const reviewStaffReport = async (id: string, status: 'reviewing' | 'resolved' | 'closed') => {
+    if (!supabase || !profile || !isAdmin || busy) return
+    setBusy(true)
+    const { error: updateError } = await supabase.from('staff_reports').update({
+      status, reviewed_by: profile.id, reviewed_at: new Date().toISOString(),
+    }).eq('id', id)
+    if (updateError) setError('به‌روزرسانی وضعیت گزارش انجام نشد.')
+    else setStaffReports(current => current.map(item => item.id === id ? { ...item, status, reviewed_by: profile.id, reviewed_at: new Date().toISOString() } : item))
+    setBusy(false)
+  }
+\n  const go = (next: Page) => { setPage(next); setMobileNav(false); setError(''); if (next === 'مرکز اعلان‌ها') setNotificationReadFilter(defaultNotificationFilter) }
 
   return <div className={compactMode ? 'app-shell compact-mode' : 'app-shell'}>
     <header className="topbar">
@@ -1138,6 +1212,22 @@ function App() {
             <div className="preference-group"><div><strong>فیلتر پیش‌فرض اعلان‌ها</strong><span>هنگام ورود به مرکز اعلان‌ها چه مواردی نمایش داده شوند؟</span></div><select aria-label="فیلتر پیش‌فرض اعلان‌ها" value={defaultNotificationFilter} onChange={e => setDefaultNotificationFilter(e.target.value as typeof defaultNotificationFilter)}><option value="all">همه اعلان‌ها</option><option value="unread">فقط خوانده‌نشده‌ها</option><option value="read">فقط خوانده‌شده‌ها</option></select></div>
             <div className="preference-group preference-toggle"><div><strong>نمایش فشرده</strong><span>فاصله کارت‌ها و بخش‌ها کمتر شود تا محتوای بیشتری دیده شود.</span></div><label className="settings-switch"><input type="checkbox" checked={compactMode} onChange={e => setCompactMode(e.target.checked)}/><span>{compactMode ? 'فعال' : 'غیرفعال'}</span></label></div>
             <div className="settings-saved-note"><ShieldCheck size={17}/> تنظیمات به‌صورت خودکار روی همین دستگاه ذخیره می‌شوند.</div>
+          </>}
+        </section>}
+
+        {page === 'ثبت خطا و تجربه' && <section className="panel staff-report-panel">
+          <div className="panel-title"><div><h2>ثبت خطا و تجربه</h2><p>گزارش محرمانه مشکلات کاری یا ثبت تجربه‌های مفید برای بهبود محیط کار</p></div><AlertCircle size={24}/></div>
+          {!userEmail ? <LoginPrompt onLogin={() => setShowLogin(true)} /> : profile?.is_active === false ? <div className="empty-state"><ShieldCheck size={34}/><strong>حساب غیرفعال است</strong><span>برای ثبت گزارش باید حساب فعال داشته باشید.</span></div> : <>
+            <form className="staff-report-form" onSubmit={submitStaffReport}>
+              <div className="report-type-switch"><button type="button" className={reportType==='error'?'active':''} onClick={()=>setReportType('error')}><AlertCircle size={17}/> ثبت خطا و مشکل</button><button type="button" className={reportType==='experience'?'active':''} onClick={()=>setReportType('experience')}><Lightbulb size={17}/> ثبت تجربه مفید</button></div>
+              <label htmlFor="staff-report-title">عنوان گزارش</label><input id="staff-report-title" required minLength={3} maxLength={160} value={reportTitle} onChange={e=>setReportTitle(e.target.value)} placeholder={reportType==='error'?'مثلاً مشکل در فرایند تحویل شیفت':'مثلاً تجربه موفق در هماهنگی تیمی'}/>
+              <label htmlFor="staff-report-body">شرح گزارش</label><textarea id="staff-report-body" required minLength={5} maxLength={5000} rows={5} value={reportBody} onChange={e=>setReportBody(e.target.value)} placeholder="موضوع را با جزئیات لازم و بدون درج اطلاعات حساس بیماران توضیح دهید..."/>
+              <div className="report-audio-box"><div><strong><Mic size={17}/> پیام صوتی (اختیاری)</strong><span>حداکثر ۱۰ مگابایت؛ در کنار توضیح متنی</span></div>{!recording ? <button type="button" className="small-outline" onClick={startReportRecording}><Mic size={16}/> شروع ضبط</button> : <button type="button" className="reject-btn" onClick={stopReportRecording}><Square size={15}/> پایان ضبط</button>}{reportAudioUrl && <div className="report-audio-preview"><audio controls src={reportAudioUrl}/><button type="button" className="small-outline" onClick={()=>{setReportAudio(null);URL.revokeObjectURL(reportAudioUrl);setReportAudioUrl('')}}>حذف صدا</button></div>}</div>
+              <p className="report-privacy-note"><ShieldCheck size={16}/> گزارش فقط برای شما و مدیران مجاز قابل مشاهده است.</p>
+              <button className="primary-btn" disabled={busy || recording || !reportTitle.trim() || !reportBody.trim()}>{busy?'در حال ثبت...':'ثبت محرمانه گزارش'}</button>
+            </form>
+            <div className="shift-roster-heading"><h3>{isAdmin?'گزارش‌های ثبت‌شده کارکنان':'گزارش‌های من'}</h3><span className="count-pill">{staffReports.length} گزارش</span></div>
+            {staffReports.length===0 ? <div className="empty-state"><ClipboardList size={32}/><strong>هنوز گزارشی ثبت نشده است</strong><span>گزارش‌های شما پس از ثبت در این قسمت قابل پیگیری هستند.</span></div> : <div className="request-list">{staffReports.map(item=><article className="staff-report-row" key={item.id}><div className="request-symbol">{item.report_type==='error'?<AlertCircle size={18}/>:<Lightbulb size={18}/>}</div><div className="request-info"><strong>{item.title}</strong><span>{item.report_type==='error'?'گزارش خطا':'تجربه مفید'}{isAdmin?' · '+(colleagues.find(person=>person.id===item.reporter_id)?.display_name||'کارمند'):''} · {new Date(item.created_at).toLocaleDateString('fa-IR')}</span><small>{item.body}</small>{item.audio_path && <div className="report-audio-actions"><button className="small-outline" onClick={()=>playStaffReportAudio(item.audio_path,item.id)}><Play size={15}/> پخش پیام صوتی</button>{reportAudioLinks[item.id]&&<audio controls src={reportAudioLinks[item.id]}/>}</div>}{item.admin_response&&<small className="report-admin-response">پاسخ مدیر: {item.admin_response}</small>}</div><span className={item.status==='resolved'?'status-approved':item.status==='closed'?'status-rejected':'status-pending'}>{item.status==='new'?'جدید':item.status==='reviewing'?'در حال بررسی':item.status==='resolved'?'رسیدگی شد':'بسته‌شده'}</span>{isAdmin&&<div className="review-actions"><button className="small-outline" disabled={busy} onClick={()=>reviewStaffReport(item.id,'reviewing')}>در حال بررسی</button><button className="approve-btn" disabled={busy} onClick={()=>reviewStaffReport(item.id,'resolved')}>رسیدگی شد</button><button className="reject-btn" disabled={busy} onClick={()=>reviewStaffReport(item.id,'closed')}>بستن</button></div>}</article>)}</div>}
           </>}
         </section>}
         <footer className="footer">شهروند مدنی <span>·</span> سامانه جامعه دیجیتال کارکنان بیمارستان مدنی</footer>
