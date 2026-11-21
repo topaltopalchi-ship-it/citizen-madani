@@ -11,7 +11,7 @@ test('Supabase migrations have unique, chronological version prefixes', async ()
   assert.deepEqual(files, sorted, 'migration filenames must already be chronological');
   const versions = files.map((name) => name.split('_')[0]);
   assert.equal(new Set(versions).size, versions.length, 'migration versions must be unique');
-  assert.equal(files.length, 18, 'README setup checklist must match the migration count');
+  assert.equal(files.length, 19, 'README setup checklist must match the migration count');
 });
 
 test('attachment metadata validation is bound to the authenticated sender and recipient path', async () => {
