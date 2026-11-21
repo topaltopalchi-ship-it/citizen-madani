@@ -495,3 +495,12 @@ body{background:radial-gradient(ellipse at 12% 0%,#e4f2f1 0,transparent 34%),lin
 .message-attachment span,.message-attachment small{font-size:9px;color:#78928e}
 .message-attachment b{max-width:230px;overflow-wrap:anywhere;font-size:11px}
 @media(max-width:600px){.chat-compose-tools{align-items:stretch}.attachment-picker{flex:1}.chat-compose-tools .primary-btn{flex:1}}
+
+/* Secure image preview dialog */
+.attachment-preview-backdrop{position:fixed;inset:0;z-index:1200;display:grid;place-items:center;padding:18px;background:#102d32b8;backdrop-filter:blur(5px)}
+.attachment-preview-modal{display:grid;gap:12px;width:min(720px,100%);max-height:90vh;padding:14px;border:1px solid #d8eae5;border-radius:20px;background:linear-gradient(145deg,#fff,#f3faf7);box-shadow:0 24px 80px #071d244d}
+.attachment-preview-modal>div{display:flex;align-items:center;justify-content:space-between;gap:10px;color:#315d5c;font-size:12px}
+.attachment-preview-modal>div strong{min-width:0;overflow-wrap:anywhere}
+.attachment-preview-modal>div button{flex:0 0 34px;width:34px;height:34px;border:0;border-radius:10px;background:#e8f3ef;color:#356e65;font-size:22px;cursor:pointer}
+.attachment-preview-modal img{display:block;max-width:100%;max-height:70vh;justify-self:center;object-fit:contain;border-radius:12px}
+.attachment-preview-modal>small{color:#829895;text-align:center;font-size:9px}
