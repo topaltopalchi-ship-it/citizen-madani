@@ -40,6 +40,7 @@ create policy "Employees mark own notifications read"
   with check (
     recipient_id = auth.uid()
     and public.is_citizen_madani_active_employee()
+    and read_at is not null
   );
 
 create or replace function public.create_citizen_madani_notification()
