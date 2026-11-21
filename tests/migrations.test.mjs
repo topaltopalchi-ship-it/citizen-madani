@@ -106,3 +106,14 @@ test('realtime read updates for received messages reconcile the unread count', a
   assert.match(app, /\.eq\('recipient_id', profile\.id\)[\s\S]*?\.is\('read_at', null\)[\s\S]*?\.is\('deleted_at', null\)/);
   assert.match(app, /if \(!countError\) setUnreadCount\(count \?\? 0\)/);
 });
+
+test('notification center aggregates messages, request outcomes, shift outcomes and announcements', async () => {
+  const app = await readFile(new URL('../src/App.tsx', import.meta.url), 'utf8');
+  assert.match(app, /const activityNotifications = useMemo\(\(\) =>/);
+  assert.match(app, /kind: 'message', target: 'پیام‌ها'/);
+  assert.match(app, /kind: 'request', target: 'درخواست‌های من'/);
+  assert.match(app, /kind: 'shift', target: 'برنامه شیفت‌ها'/);
+  assert.match(app, /kind: 'announcement', target: 'اطلاعیه‌ها'/);
+  assert.match(app, /page === 'مرکز اعلان‌ها'/);
+  assert.match(app, /notification-center-trigger/);
+});
