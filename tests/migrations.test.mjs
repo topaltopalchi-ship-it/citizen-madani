@@ -117,3 +117,31 @@ test('notification center aggregates messages, request outcomes, shift outcomes 
   assert.match(app, /page === 'مرکز اعلان‌ها'/);
   assert.match(app, /notification-center-trigger/);
 });
+
+test('employee notifications are durable, owner-scoped and trigger-generated', async () => {
+  const sql = await readMigration('20261121220000_employee_notifications.sql');
+  assert.match(sql, /create table if not exists public\.employee_notifications/i);
+  assert.match(sql, /recipient_id uuid not null references public\.employee_profiles/i);
+  assert.match(sql, /source_key text not null unique/i);
+  assert.match(sql, /create policy "Employees read own notifications"[\s\S]*?recipient_id = auth\.uid\(\)/i);
+  assert.match(sql, /create policy "Employees mark own notifications read"[\s\S]*?recipient_id = auth\.uid\(\)/i);
+  assert.match(sql, /grant update \(read_at\) on public\.employee_notifications to authenticated/i);
+  assert.match(sql, /revoke all privileges on public\.employee_notifications from public, anon, authenticated/i);
+  assert.match(sql, /security definer[\s\S]*?set search_path = ''/i);
+  assert.match(sql, /after insert on public\.direct_messages/i);
+  assert.match(sql, /after update of status on public\.exchange_requests/i);
+  assert.match(sql, /after update of status on public\.shift_change_requests/i);
+  assert.match(sql, /after update of is_published on public\.announcements/i);
+  assert.match(sql, /on conflict \(source_key\) do nothing/i);
+  assert.match(sql, /alter publication supabase_realtime add table public\.employee_notifications/i);
+});
+
+test('notification center loads persisted notifications and syncs read state in realtime', async () => {
+  const app = await readFile(new URL('../src/App.tsx', import.meta.url), 'utf8');
+  assert.match(app, /from\('employee_notifications'\)\.select/);
+  assert.match(app, /filter: `recipient_id=eq\.\$\{profile\.id\}`/);
+  assert.match(app, /const markNotificationRead = async/);
+  assert.match(app, /const markAllNotificationsRead = async/);
+  assert.match(app, /\.update\(\{ read_at: readAt \}\)/);
+  assert.match(app, /setNotifications\(current => current\.map/);
+});
