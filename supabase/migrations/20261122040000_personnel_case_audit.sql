@@ -32,7 +32,7 @@ create or replace function public.log_personnel_case_event()
 returns trigger
 language plpgsql
 security definer
-set search_path = public
+set search_path = ''
 as $$
 declare
   v_event_type text;
