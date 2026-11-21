@@ -506,9 +506,9 @@ function App() {
              <div className="shift-calendar-toolbar">
                <div><h3>تقویم ماهانه</h3><span>{calendarMonthShifts.length} شیفت در این ماه</span></div>
                <div className="shift-calendar-actions">
-                 <button type="button" className="small-outline" onClick={() => setCalendarMonth(current => new Date(current.getFullYear(), current.getMonth() - 1, 1))} aria-label="ماه قبل"><ChevronLeft size={16}/></button>
+                 <button type="button" className="small-outline" onClick={() => { setCalendarMonth(current => new Date(current.getFullYear(), current.getMonth() - 1, 1)); resetShiftReportFilters() }} aria-label="ماه قبل"><ChevronLeft size={16}/></button>
                  <strong>{calendarMonth.toLocaleDateString('fa-IR', { month: 'long', year: 'numeric' })}</strong>
-                 <button type="button" className="small-outline calendar-next" onClick={() => setCalendarMonth(current => new Date(current.getFullYear(), current.getMonth() + 1, 1))} aria-label="ماه بعد"><ChevronLeft size={16}/></button>
+                 <button type="button" className="small-outline calendar-next" onClick={() => { setCalendarMonth(current => new Date(current.getFullYear(), current.getMonth() + 1, 1)); resetShiftReportFilters() }} aria-label="ماه بعد"><ChevronLeft size={16}/></button>
                  <button type="button" className="primary-btn calendar-export" onClick={exportShiftCalendar} disabled={filteredReportShifts.length === 0}>خروجی گزارش</button>
                </div>
              </div>
