@@ -162,3 +162,11 @@ test('profile password change uses Supabase Auth and validates matching credenti
   assert.match(app, /type="password" autoComplete="new-password"/);
   assert.match(app, /account-security-panel/);
 });
+
+
+test('global sign-out revokes all Supabase sessions from profile security settings', async () => {
+  const app = await readFile(new URL('../src/App.tsx', import.meta.url), 'utf8');
+  assert.match(app, /supabase\.auth\.signOut\(\{ scope: 'global' \}\)/);
+  assert.match(app, /خروج از همه دستگاه‌ها/);
+  assert.match(app, /خروج از این دستگاه/);
+});
