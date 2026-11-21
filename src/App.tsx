@@ -12,6 +12,10 @@ type WorkShift = { id: string; employee_id: string; shift_date: string; shift_ty
 type ShiftChangeRequest = { id: string; requester_id: string; from_shift_id: string; to_shift_id: string; note: string | null; status: string; reviewed_by: string | null; reviewed_at: string | null; created_at: string }
 
 const units = ['اورژانس', 'داخلی', 'جراحی', 'ICU', 'آزمایشگاه', 'رادیولوژی', 'داروخانه', 'پذیرش', 'سایر']
+
+function dateKey(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+}
 const nav: { label: Page; icon: typeof Home }[] = [
   { label: 'خانه', icon: Home }, { label: 'همکاران', icon: Users }, { label: 'برنامه شیفت‌ها', icon: CalendarDays },
   { label: 'درخواست تبادل', icon: ArrowLeftRight }, { label: 'درخواست‌های من', icon: ClipboardList },
@@ -152,7 +156,7 @@ function App() {
       if (active && announcementError) setError(announcementError.message)
       if (active && announcementData) setAnnouncements(announcementData)
       const [shiftResult, shiftRequestResult] = await Promise.all([
-        client.from('work_shifts').select('id,employee_id,shift_date,shift_type,starts_at,ends_at,department,notes,created_at').gte('shift_date', new Date(new Date().getFullYear() - 1, new Date().getMonth(), 1).toISOString().slice(0, 10)).lte('shift_date', new Date(new Date().getFullYear() + 1, new Date().getMonth() + 1, 0).toISOString().slice(0, 10)).order('shift_date').order('starts_at').limit(1500),
+        client.from('work_shifts').select('id,employee_id,shift_date,shift_type,starts_at,ends_at,department,notes,created_at').gte('shift_date', dateKey(new Date(new Date().getFullYear() - 1, new Date().getMonth(), 1))).lte('shift_date', dateKey(new Date(new Date().getFullYear() + 1, new Date().getMonth() + 1, 0))).order('shift_date').order('starts_at').limit(1500),
         client.from('shift_change_requests').select('id,requester_id,from_shift_id,to_shift_id,note,status,reviewed_by,reviewed_at,created_at').order('created_at', { ascending: false }).limit(200),
       ])
       if (active && shiftResult.error) setError('بارگذاری برنامه شیفت‌ها انجام نشد؛ Migration مدیریت شیفت را اجرا کنید.')
@@ -487,7 +491,7 @@ function App() {
                </div>
              </div>
              <div className="shift-calendar-grid shift-calendar-weekdays">{['شنبه','یکشنبه','دوشنبه','سه‌شنبه','چهارشنبه','پنجشنبه','جمعه'].map(day => <div key={day}>{day}</div>)}</div>
-             <div className="shift-calendar-grid shift-calendar-days">{calendarCells.map((cell, index) => cell ? <div className={'shift-calendar-day' + (cell.key === new Date().toLocaleDateString('en-CA') ? ' today' : '')} key={cell.key}>
+             <div className="shift-calendar-grid shift-calendar-days">{calendarCells.map((cell, index) => cell ? <div className={'shift-calendar-day' + (cell.key === dateKey(new Date()) ? ' today' : '')} key={cell.key}>
                <strong>{cell.date.toLocaleDateString('fa-IR', { day: 'numeric' })}</strong>
                {cell.shifts.slice(0, 3).map(shift => <span className={'calendar-shift '+shift.shift_type} key={shift.id} title={colleagues.find(person => person.id === shift.employee_id)?.display_name || 'کارمند'}>{(colleagues.find(person => person.id === shift.employee_id)?.display_name || 'کارمند').split(' ')[0]} · {shiftTypeLabel(shift.shift_type)}</span>)}
                {cell.shifts.length > 3 && <small>+{cell.shifts.length - 3} شیفت دیگر</small>}
