@@ -247,3 +247,15 @@ test('shift report compares workload across active employees, including zero-shi
   assert.match(app, /میانگین شیفت در بازه و فیلتر فعلی/);
   assert.match(app, /نزدیک میانگین/);
 });
+
+
+test('admin audit log supports local search, entity filters, and filtered CSV export', async () => {
+  const app = await readFile(new URL('../src/App.tsx', import.meta.url), 'utf8');
+  assert.match(app, /const \[auditQuery, setAuditQuery\]/);
+  assert.match(app, /const \[auditActionFilter, setAuditActionFilter\]/);
+  assert.match(app, /const filteredAuditEntries = useMemo/);
+  assert.match(app, /filteredAuditEntries\.forEach\(entry => rows\.push/);
+  assert.match(app, /citizen-madani-admin-audit\.csv/);
+  assert.match(app, /جست‌وجوی سجل فعالیت‌ها/);
+  assert.match(app, /خروجی CSV/);
+});
