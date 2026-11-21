@@ -771,7 +771,7 @@ function App() {
       <div className="brand-mark"><Building2 size={23} /></div>
       <div className="brand"><strong>شهروند مدنی</strong><span>جامعه دیجیتال کارکنان بیمارستان مدنی</span></div>
       <div className="top-actions">
-        {userEmail && <button className="icon-btn notification-center-trigger" onClick={() => go('مرکز اعلان‌ها')} aria-label="مرکز اعلان‌ها" title="مرکز اعلان‌ها"><Bell size={18} />{activityNotifications.length > 0 && <span>{activityNotifications.length > 99 ? '99+' : activityNotifications.length}</span>}</button>}
+        {userEmail && <button className="icon-btn notification-center-trigger" onClick={() => go('مرکز اعلان‌ها')} aria-label="مرکز اعلان‌ها" title="مرکز اعلان‌ها"><Bell size={18} />{unreadNotificationCount > 0 && <span>{unreadNotificationCount > 99 ? '99+' : unreadNotificationCount}</span>}</button>}
         {userEmail && <button className="icon-btn" onClick={logout} aria-label="خروج"><LogOut size={18} /></button>}
         <button className="login-btn" onClick={() => userEmail ? go('پروفایل') : setShowLogin(true)}>
           {userEmail ? <UserRound size={17} /> : <LogIn size={17} />}{userEmail ? (profile?.display_name || 'حساب کاربری') : 'ورود کارکنان'}
