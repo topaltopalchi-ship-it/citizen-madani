@@ -749,3 +749,9 @@ body{background:radial-gradient(ellipse at 12% 0%,#e4f2f1 0,transparent 34%),lin
 .workload-status.below{background:#fff7e6;color:#9a6700}
 .workload-status.balanced{background:#ecfdf3;color:#067647}
 @media(max-width:640px){.shift-workload-card{padding:12px;border-radius:14px}.shift-workload-table th,.shift-workload-table td{padding:10px 8px}}
+
+
+.audit-date-filter{display:grid;gap:4px;color:#648087;font-size:10px;font-weight:800;min-width:130px}
+.audit-date-filter input{width:100%;min-height:36px;padding:7px 9px;border:1px solid #dce8e5;border-radius:10px;background:#fff;color:#365d61;font:inherit}
+.audit-date-filter input:focus{outline:2px solid #329b8c55;border-color:#329b8c}
+@media(max-width:560px){.employee-admin-toolbar .audit-date-filter{width:100%}.employee-admin-toolbar .audit-date-filter input{width:100%}}
