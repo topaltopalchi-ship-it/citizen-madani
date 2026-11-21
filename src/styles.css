@@ -519,3 +519,14 @@ body{background:radial-gradient(ellipse at 12% 0%,#e4f2f1 0,transparent 34%),lin
 .thread-search input{width:100%;min-width:0;border:0;outline:0;background:transparent;color:#27384e;font:inherit;font-size:11px}
 .thread-search input::placeholder{color:#9ba8b8}
 .thread-search button{display:grid;place-items:center;width:22px;height:22px;border:0;border-radius:7px;background:#e9eef5;color:#53657c;font-size:17px;cursor:pointer}
+
+
+/* Inbox filters: compact, tactile and keyboard-friendly */
+.contact-filters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:10px 0 12px}
+.contact-filters button{display:flex;align-items:center;justify-content:space-between;gap:6px;min-width:0;min-height:34px;padding:7px 9px;border:1px solid #e1ece9;border-radius:10px;background:linear-gradient(145deg,#fff,#f4f8f7);color:#668087;font:inherit;font-size:9px;font-weight:800;box-shadow:inset 0 1px #fff,0 2px 5px #244c5808;cursor:pointer;transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease}
+.contact-filters button b{display:grid;place-items:center;min-width:19px;height:19px;padding:0 5px;border-radius:7px;background:#eaf2f0;color:#52756f;font-size:9px;font-variant-numeric:tabular-nums}
+.contact-filters button:hover{transform:translateY(-1px);border-color:#a9d4c8;box-shadow:0 4px 9px #244c5812}
+.contact-filters button.active{border-color:#54a795;background:linear-gradient(145deg,#e9f8f2,#e9f2fb);color:#24796e;box-shadow:inset 0 1px #fff,0 3px 8px #368b7a20}
+.contact-filters button.active b{background:linear-gradient(145deg,#3da58e,#287e78);color:#fff}
+.contact-empty{margin:8px 0;padding:17px 10px;border:1px dashed #dce9e6;border-radius:12px;background:#f9fcfb;color:#84999a;text-align:center;font-size:10px;line-height:1.9}
+@media(max-width:700px){.contact-filters{gap:5px;margin:8px 0 10px}.contact-filters button{min-height:36px;padding:7px;font-size:9px}}
