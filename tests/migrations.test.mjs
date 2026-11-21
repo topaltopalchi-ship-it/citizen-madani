@@ -372,3 +372,22 @@ test('staff report page supports private text and audio submissions with admin r
   assert.match(css, /\.staff-report-form/);
   assert.match(css, /\.report-audio-preview/);
 });
+
+test('employee welfare page loads published agreements, supports admin publishing and expiry display', async () => {
+  const app = await readFile(new URL('../src/App.tsx', import.meta.url), 'utf8');
+  const css = await readFile(new URL('../src/styles.css', import.meta.url), 'utf8');
+  assert.match(app, /page === 'امور رفاهی'/);
+  assert.match(app, /from\('welfare_partners'\)\.select/);
+  assert.match(app, /const submitWelfarePartner = async/);
+  assert.match(app, /const setWelfareStatus = async/);
+  assert.match(app, /welfareCategoryFilter/);
+  assert.match(app, /item\.status === 'published'/);
+  assert.match(css, /\.welfare-card/);
+  assert.match(css, /\.welfare-list/);
+});
+
+test('staff report form warns against entering identifiable patient information', async () => {
+  const app = await readFile(new URL('../src/App.tsx', import.meta.url), 'utf8');
+  assert.match(app, /اطلاعات قابل شناسایی بیمار/);
+  assert.match(app, /report-sensitive-warning/);
+});
