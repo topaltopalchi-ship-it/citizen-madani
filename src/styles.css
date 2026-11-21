@@ -20,3 +20,24 @@
 .announcement-priority.important{color:#a36a22;background:#fff3df}
 .announcement-card>p{font-size:12px;line-height:2;color:#526e77;white-space:pre-wrap;margin:13px 0}
 .announcement-foot small{font-size:10px;color:#91a1a6}
+
+
+.messenger-layout{display:grid;grid-template-columns:245px minmax(0,1fr);gap:16px;min-height:420px}
+.contact-list{border:1px solid #e8eff0;border-radius:12px;padding:13px;display:flex;flex-direction:column;gap:8px}
+.contact-list>strong{font-size:12px;margin-bottom:5px}
+.contact-button{display:flex;align-items:center;gap:9px;text-align:right;border:0;background:#f8faf9;border-radius:10px;padding:9px;color:#284a56}
+.contact-button.selected{background:#eaf5f3;outline:1px solid #b8d9d5}
+.contact-button>span:last-child{display:flex;flex-direction:column;gap:4px;min-width:0}
+.contact-button b{font-size:11px}.contact-button small,.chat-heading small{font-size:9px;color:#83969b}
+.chat-panel{border:1px solid #e8eff0;border-radius:12px;display:flex;flex-direction:column;min-width:0;overflow:hidden}
+.chat-heading{padding:13px 16px;border-bottom:1px solid #edf1f2;display:flex;flex-direction:column;gap:5px}
+.chat-heading strong{font-size:12px}
+.chat-messages{padding:15px;display:flex;flex-direction:column;gap:10px;min-height:240px;max-height:420px;overflow:auto;background:#fbfcfc}
+.chat-bubble{max-width:82%;align-self:flex-start;background:#edf3f3;border-radius:12px 12px 12px 3px;padding:10px 12px}
+.chat-bubble.mine{align-self:flex-end;background:#e5f3ef;border-radius:12px 12px 3px 12px}
+.chat-bubble p{font-size:12px;line-height:1.9;white-space:pre-wrap;overflow-wrap:anywhere;margin:0 0 5px}
+.chat-bubble small{font-size:9px;color:#82969a}
+.empty-chat{margin:auto;color:#94a4a8;font-size:11px}
+.chat-compose{display:flex;gap:9px;padding:12px;border-top:1px solid #edf1f2;align-items:flex-end}
+.chat-compose textarea{flex:1;min-width:0;resize:vertical;border:1px solid #e1eaec;border-radius:9px;padding:10px;font-size:11px;outline-color:#6aa7a5}
+@media(max-width:700px){.messenger-layout{grid-template-columns:1fr}.contact-list{max-height:190px;overflow:auto}.contact-list .contact-button{flex-shrink:0}.chat-messages{max-height:350px}.chat-compose{flex-direction:column;align-items:stretch}}
