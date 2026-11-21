@@ -4,7 +4,7 @@ import * as XLSX from 'xlsx'
 import mammoth from 'mammoth'
 import { supabase } from './lib/supabase'
 
-type Page = 'خانه' | 'همکاران' | 'درخواست تبادل' | 'درخواست‌های من' | 'پروفایل' | 'مدیریت درخواست‌ها' | 'مدیریت کارکنان' | 'سجل فعالیت‌ها' | 'برنامه شیفت‌ها' | 'اطلاعیه‌ها' | 'پیام‌ها' | 'مرکز اعلان‌ها' | 'تنظیمات شخصی' | 'ثبت خطا و تجربه' | 'امور رفاهی' | 'بازارچه و آگهی‌ها' | 'حقوق و کارانه'
+type Page = 'خانه' | 'همکاران' | 'درخواست تبادل' | 'درخواست‌های من' | 'پروفایل' | 'مدیریت درخواست‌ها' | 'مدیریت کارکنان' | 'سجل فعالیت‌ها' | 'برنامه شیفت‌ها' | 'اطلاعیه‌ها' | 'پیام‌ها' | 'مرکز اعلان‌ها' | 'تنظیمات شخصی' | 'ثبت خطا و تجربه' | 'امور رفاهی' | 'بازارچه و آگهی‌ها' | 'حقوق و کارانه' | 'پرونده‌های اداری'
 type Profile = { id: string; display_name: string; department: string | null; job_title: string | null; role?: string; is_active?: boolean }
 type ExchangeRequest = { id: string; employee_id?: string; request_type: string; from_unit: string; to_unit: string; note: string | null; status: string; review_note?: string | null; reviewed_by?: string | null; reviewed_at?: string | null; created_at: string }
 type Announcement = { id: string; title: string; body: string; priority: 'normal' | 'important'; is_published: boolean; created_at: string; published_at: string | null }
@@ -26,7 +26,7 @@ function dateKey(date: Date) {
 const nav: { label: Page; icon: typeof Home }[] = [
   { label: 'خانه', icon: Home }, { label: 'همکاران', icon: Users }, { label: 'برنامه شیفت‌ها', icon: CalendarDays }, { label: 'امور رفاهی', icon: HeartHandshake }, { label: 'بازارچه و آگهی‌ها', icon: Megaphone }, { label: 'حقوق و کارانه', icon: FileText },
   { label: 'درخواست تبادل', icon: ArrowLeftRight }, { label: 'درخواست‌های من', icon: ClipboardList },
-  { label: 'پروفایل', icon: UserRound }, { label: 'تنظیمات شخصی', icon: Settings }, { label: 'اطلاعیه‌ها', icon: Megaphone }, { label: 'پیام‌ها', icon: Bell }, { label: 'مرکز اعلان‌ها', icon: Activity }, { label: 'ثبت خطا و تجربه', icon: AlertCircle },
+  { label: 'پروفایل', icon: UserRound }, { label: 'تنظیمات شخصی', icon: Settings }, { label: 'اطلاعیه‌ها', icon: Megaphone }, { label: 'پیام‌ها', icon: Bell }, { label: 'مرکز اعلان‌ها', icon: Activity }, { label: 'ثبت خطا و تجربه', icon: AlertCircle }, { label: 'پرونده‌های اداری', icon: FileText },
 ]
 
 function App() {
@@ -75,6 +75,11 @@ function App() {
   const [unreadCount, setUnreadCount] = useState(0)
   const [notifications, setNotifications] = useState<EmployeeNotification[]>([])
   const [staffReports, setStaffReports] = useState<any[]>([])
+  const [personnelCases, setPersonnelCases] = useState<any[]>([])
+  const [personnelCaseResponses, setPersonnelCaseResponses] = useState<Record<string, string>>({})
+  const [caseType, setCaseType] = useState('employment_letter')
+  const [caseTitle, setCaseTitle] = useState('')
+  const [caseDescription, setCaseDescription] = useState('')
   const [welfarePartners, setWelfarePartners] = useState<WelfarePartner[]>([])
   const [welfareCategoryFilter, setWelfareCategoryFilter] = useState('all')
   const [welfareName, setWelfareName] = useState('')
@@ -548,6 +553,9 @@ function App() {
       const { data: reportData, error: reportError } = await client.from('staff_reports').select('id,reporter_id,report_type,title,body,department,occurred_at,audio_path,status,admin_response,created_at').order('created_at', { ascending: false }).limit(200)
       if (active && reportError) setError('بارگذاری گزارش‌ها انجام نشد؛ Migration ثبت خطا و تجربه را بررسی کنید.')
       if (active && reportData) setStaffReports(reportData)
+      const { data: caseData, error: caseError } = await client.from('personnel_cases').select('id,employee_id,case_type,title,description,status,admin_response,reviewed_by,reviewed_at,created_at,updated_at').order('created_at', { ascending: false }).limit(200)
+      if (active && caseError) setError('بارگذاری پرونده‌های اداری انجام نشد؛ Migration مربوط به پرونده‌ها را بررسی کنید.')
+      if (active && caseData) setPersonnelCases(caseData)
       const { data: notificationData, error: notificationError } = await client.from('employee_notifications').select('id,recipient_id,notification_type,title,body,target_page,source_key,created_at,read_at').order('created_at', { ascending: false }).limit(100)
       if (active && notificationError) setError('بارگذاری اعلان‌ها انجام نشد؛ Migration مرکز اعلان‌ها را بررسی کنید.')
       if (active && notificationData) setNotifications(notificationData as EmployeeNotification[])
@@ -1166,6 +1174,36 @@ function App() {
     setRecording(false)
   }
 
+  const submitPersonnelCase = async (event: FormEvent) => {
+    event.preventDefault()
+    if (!supabase || !profile || !caseTitle.trim() || !caseDescription.trim() || busy) return
+    setBusy(true); setError(''); setMessage('')
+    const { data, error: insertError } = await supabase.from('personnel_cases').insert({
+      employee_id: profile.id, case_type: caseType, title: caseTitle.trim(), description: caseDescription.trim(),
+    }).select('id,employee_id,case_type,title,description,status,admin_response,reviewed_by,reviewed_at,created_at,updated_at').single()
+    if (insertError) setError('ثبت پرونده انجام نشد؛ دسترسی پایگاه داده را بررسی کنید.')
+    else { setPersonnelCases(current => [data, ...current]); setCaseTitle(''); setCaseDescription(''); setMessage('درخواست اداری شما ثبت شد و برای بررسی ارسال گردید.') }
+    setBusy(false)
+  }
+
+  const reviewPersonnelCase = async (id: string, status: 'reviewing' | 'waiting_employee' | 'completed' | 'rejected') => {
+    if (!supabase || !profile || !isAdmin || busy) return
+    setBusy(true)
+    const { error: updateError } = await supabase.from('personnel_cases').update({ status, reviewed_by: profile.id, reviewed_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq('id', id)
+    if (updateError) setError('به‌روزرسانی پرونده انجام نشد.')
+    else setPersonnelCases(current => current.map(item => item.id === id ? { ...item, status, reviewed_by: profile.id, reviewed_at: new Date().toISOString() } : item))
+    setBusy(false)
+  }
+
+  const respondPersonnelCase = async (id: string, response: string) => {
+    if (!supabase || !profile || !isAdmin || busy || !response.trim()) return
+    setBusy(true)
+    const { error: updateError } = await supabase.from('personnel_cases').update({ admin_response: response.trim(), reviewed_by: profile.id, reviewed_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq('id', id)
+    if (updateError) setError('ثبت پاسخ پرونده انجام نشد.')
+    else setPersonnelCases(current => current.map(item => item.id === id ? { ...item, admin_response: response.trim(), reviewed_by: profile.id, reviewed_at: new Date().toISOString() } : item))
+    setBusy(false)
+  }
+
   const submitStaffReport = async (event: FormEvent) => {
     event.preventDefault()
     if (!supabase || !profile || !reportTitle.trim() || !reportBody.trim() || busy) return
@@ -1485,6 +1523,22 @@ function App() {
             <div className="preference-group"><div><strong>فیلتر پیش‌فرض اعلان‌ها</strong><span>هنگام ورود به مرکز اعلان‌ها چه مواردی نمایش داده شوند؟</span></div><select aria-label="فیلتر پیش‌فرض اعلان‌ها" value={defaultNotificationFilter} onChange={e => setDefaultNotificationFilter(e.target.value as typeof defaultNotificationFilter)}><option value="all">همه اعلان‌ها</option><option value="unread">فقط خوانده‌نشده‌ها</option><option value="read">فقط خوانده‌شده‌ها</option></select></div>
             <div className="preference-group preference-toggle"><div><strong>نمایش فشرده</strong><span>فاصله کارت‌ها و بخش‌ها کمتر شود تا محتوای بیشتری دیده شود.</span></div><label className="settings-switch"><input type="checkbox" checked={compactMode} onChange={e => setCompactMode(e.target.checked)}/><span>{compactMode ? 'فعال' : 'غیرفعال'}</span></label></div>
             <div className="settings-saved-note"><ShieldCheck size={17}/> تنظیمات به‌صورت خودکار روی همین دستگاه ذخیره می‌شوند.</div>
+          </>}
+        </section>}
+
+        {page === 'پرونده‌های اداری' && <section className="panel personnel-case-panel">
+          <div className="panel-title"><div><h2>پرونده‌های اداری کارکنان</h2><p>ثبت و پیگیری درخواست‌های اداری؛ فقط ثبت‌کننده و مدیران مجاز پرونده را می‌بینند.</p></div><FileText size={24}/></div>
+          {!userEmail ? <LoginPrompt onLogin={() => setShowLogin(true)} /> : profile?.is_active === false ? <div className="empty-state"><ShieldCheck size={34}/><strong>حساب غیرفعال است</strong><span>برای ثبت یا مشاهده پرونده باید حساب فعال داشته باشید.</span></div> : <>
+            {!isAdmin && <form className="staff-report-form" onSubmit={submitPersonnelCase}>
+              <h3>ثبت درخواست اداری جدید</h3>
+              <label htmlFor="personnel-case-type">نوع درخواست</label><select id="personnel-case-type" value={caseType} onChange={e=>setCaseType(e.target.value)}><option value="employment_letter">گواهی اشتغال به کار</option><option value="insurance">امور بیمه</option><option value="leave">مرخصی و مأموریت</option><option value="training">آموزش و دوره‌ها</option><option value="payroll">امور حقوق و مزایا</option><option value="other">سایر امور اداری</option></select>
+              <label htmlFor="personnel-case-title">عنوان درخواست</label><input id="personnel-case-title" required minLength={3} maxLength={160} value={caseTitle} onChange={e=>setCaseTitle(e.target.value)} placeholder="موضوع درخواست را بنویسید"/>
+              <label htmlFor="personnel-case-description">شرح درخواست</label><textarea id="personnel-case-description" required minLength={5} maxLength={4000} rows={4} value={caseDescription} onChange={e=>setCaseDescription(e.target.value)} placeholder="شرح مختصر و لازم برای رسیدگی..."/>
+              <div className="report-sensitive-warning"><ShieldCheck size={16}/> اطلاعات هویتی یا پزشکی بیماران و مدارک حساس را در توضیحات وارد نکنید. بارگذاری فایل در این بخش فعال نیست.</div>
+              <button className="primary-btn" disabled={busy || !caseTitle.trim() || !caseDescription.trim()}>{busy?'در حال ثبت...':'ثبت و ارسال درخواست'}</button>
+            </form>}
+            <div className="shift-roster-heading"><h3>{isAdmin?'صف پرونده‌های اداری کارکنان':'درخواست‌های اداری من'}</h3><span className="count-pill">{personnelCases.length} پرونده</span></div>
+            {personnelCases.length===0 ? <div className="empty-state"><FileText size={32}/><strong>پرونده‌ای ثبت نشده است</strong><span>درخواست‌های ثبت‌شده در این قسمت نمایش داده می‌شوند.</span></div> : <div className="request-list">{personnelCases.map(item=><article className="staff-report-row" key={item.id}><div className="request-symbol"><FileText size={18}/></div><div className="request-info"><strong>{item.title}</strong><span>{({employment_letter:'گواهی اشتغال',insurance:'امور بیمه',leave:'مرخصی و مأموریت',training:'آموزش',payroll:'حقوق و مزایا',other:'سایر'} as Record<string,string>)[item.case_type] || 'درخواست اداری'}{isAdmin?' · '+(colleagues.find(person=>person.id===item.employee_id)?.display_name || 'کارمند'):''} · {new Date(item.created_at).toLocaleDateString('fa-IR')}</span><small>{item.description}</small>{item.admin_response&&<small className="report-admin-response">پاسخ امور اداری: {item.admin_response}</small>}{isAdmin&&<><textarea rows={2} maxLength={3000} value={personnelCaseResponses[item.id] ?? item.admin_response ?? ''} onChange={e=>setPersonnelCaseResponses(current=>({...current,[item.id]:e.target.value}))} placeholder="پاسخ به کارمند..."/><button className="small-outline" disabled={busy || !(personnelCaseResponses[item.id] ?? item.admin_response ?? '').trim()} onClick={()=>respondPersonnelCase(item.id,personnelCaseResponses[item.id] ?? item.admin_response ?? '')}>ثبت پاسخ</button></>}</div><span className={item.status==='completed'?'status-approved':item.status==='rejected'?'status-rejected':'status-pending'}>{({submitted:'ثبت‌شده',reviewing:'در حال بررسی',waiting_employee:'نیازمند پاسخ کارمند',completed:'تکمیل‌شده',rejected:'ردشده'} as Record<string,string>)[item.status] || item.status}</span>{isAdmin&&<div className="review-actions"><button className="small-outline" disabled={busy} onClick={()=>reviewPersonnelCase(item.id,'reviewing')}>در حال بررسی</button><button className="small-outline" disabled={busy} onClick={()=>reviewPersonnelCase(item.id,'waiting_employee')}>نیازمند پاسخ</button><button className="approve-btn" disabled={busy} onClick={()=>reviewPersonnelCase(item.id,'completed')}>تکمیل</button><button className="reject-btn" disabled={busy} onClick={()=>reviewPersonnelCase(item.id,'rejected')}>رد</button></div>}</article>)}</div>}
           </>}
         </section>}
 
