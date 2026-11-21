@@ -148,6 +148,17 @@ function App() {
     link.download = `shift-report-${calendarMonth.getFullYear()}-${String(calendarMonth.getMonth() + 1).padStart(2, '0')}.csv`
     document.body.appendChild(link); link.click(); link.remove(); URL.revokeObjectURL(url)
   }
+
+  const pendingMyRequests = myRequests.filter(request => request.status === 'pending').length
+  const approvedMyRequests = myRequests.filter(request => request.status === 'approved').length
+  const publishedAnnouncementCount = announcements.filter(item => item.is_published).length
+  const todayKey = dateKey(new Date())
+  const myUpcomingShifts = useMemo(() => workShifts
+    .filter(shift => shift.employee_id === profile?.id && shift.shift_date >= todayKey)
+    .sort((a, b) => a.shift_date.localeCompare(b.shift_date) || a.starts_at.localeCompare(b.starts_at))
+    .slice(0, 3), [workShifts, profile?.id, todayKey])
+  const adminPendingRequests = requests.filter(request => request.status === 'pending').length
+  const adminPendingShiftChanges = shiftChangeRequests.filter(request => request.status === 'pending').length
   const activeEmployeeCount = colleagues.filter(employee => employee.is_active !== false).length
   const inactiveEmployeeCount = colleagues.length - activeEmployeeCount
   const filteredContacts = useMemo(() => colleagues.filter(c => c.id !== profile?.id &&
@@ -472,7 +483,18 @@ function App() {
         {!configured && <div className="notice"><div className="notice-icon"><Activity size={20} /></div><div><strong>اتصال پایگاه داده تنظیم نشده است</strong><p>برای فعال‌سازی ورود و ذخیره اطلاعات، متغیرهای Supabase را در تنظیمات محیط اجرا وارد کنید.</p></div></div>}
         {page === 'خانه' && <>
           <section className="hero-card"><div className="hero-content"><span className="hero-tag">کنار هم، قوی‌تر</span><h2>یک جامعه؛ هزاران فرصت همکاری</h2><p>با همکاران خود ارتباط بگیرید، درخواست‌های همکاری ثبت کنید و از تازه‌ترین اطلاعیه‌ها باخبر شوید.</p><button onClick={() => go('همکاران')} className="hero-btn">مشاهده همکاران <ChevronLeft size={17} /></button></div><div className="hero-art"><div className="orbit orbit-one" /><div className="orbit orbit-two" /><div className="hero-building"><Building2 size={74} /><span>مدنی</span></div><div className="float-bubble bubble-a"><Users size={21} /></div><div className="float-bubble bubble-b"><HeartHandshake size={21} /></div></div></section>
-          <section className="stats-grid"><Stat icon={Users} value={userEmail ? String(colleagues.length) : '—'} label="اعضای جامعه" hint="کارکنان فعال ثبت‌شده" /><Stat icon={ArrowLeftRight} value={userEmail ? String(myRequests.length) : '—'} label="درخواست‌های من" hint="درخواست‌های ثبت‌شده حساب شما" /><Stat icon={Activity} value={configured ? 'متصل' : 'نیازمند تنظیم'} label="وضعیت سامانه" hint="وضعیت اتصال پایگاه داده" /></section>
+          <section className="stats-grid"><Stat icon={Users} value={userEmail ? String(activeEmployeeCount) : '—'} label="کارکنان فعال" hint="اعضای فعال جامعه مدنی" /><Stat icon={ArrowLeftRight} value={userEmail ? String(myRequests.length) : '—'} label="درخواست‌های من" hint={userEmail ? pendingMyRequests + ' در انتظار · ' + approvedMyRequests + ' تأییدشده' : 'پس از ورود قابل مشاهده است'} /><Stat icon={Megaphone} value={userEmail ? String(publishedAnnouncementCount) : '—'} label="اطلاعیه‌های منتشرشده" hint="خبرهای قابل مشاهده کارکنان" /><Stat icon={Activity} value={configured ? 'متصل' : 'نیازمند تنظیم'} label="وضعیت سامانه" hint="وضعیت اتصال پایگاه داده" /></section>
+          {userEmail && <section className="home-overview-grid">
+            <article className="home-overview-card">
+              <div className="home-overview-heading"><div><span className="home-overview-icon"><CalendarDays size={17}/></span><div><strong>شیفت‌های پیش‌روی من</strong><small>برنامه ثبت‌شده از امروز به بعد</small></div></div><button className="text-link" onClick={() => go('برنامه شیفت‌ها')}>مشاهده تقویم</button></div>
+              {myUpcomingShifts.length ? <div className="home-upcoming-list">{myUpcomingShifts.map(shift => <div className="home-upcoming-item" key={shift.id}><div><strong>{new Date(shift.shift_date+'T12:00:00').toLocaleDateString('fa-IR',{weekday:'long',day:'numeric',month:'long'})}</strong><small>{shift.department} · {shift.starts_at.slice(0,5)} تا {shift.ends_at.slice(0,5)}</small></div><span className={'shift-type-pill '+shift.shift_type}>{shiftTypeLabel(shift.shift_type)}</span></div>)}</div> : <p className="home-overview-empty">در حال حاضر شیفت آینده‌ای برای حساب شما ثبت نشده است.</p>}
+            </article>
+            <article className="home-overview-card">
+              <div className="home-overview-heading"><div><span className="home-overview-icon announcements"><Megaphone size={17}/></span><div><strong>آخرین اطلاعیه‌ها</strong><small>{publishedAnnouncementCount} اطلاعیه منتشرشده</small></div></div><button className="text-link" onClick={() => go('اطلاعیه‌ها')}>همه اطلاعیه‌ها</button></div>
+              {announcements.filter(item => item.is_published).slice(0,3).length ? <div className="home-announcement-list">{announcements.filter(item => item.is_published).slice(0,3).map(item => <button key={item.id} onClick={() => go('اطلاعیه‌ها')}><span className={item.priority === 'important' ? 'announcement-dot important' : 'announcement-dot'}/><span><strong>{item.title}</strong><small>{new Date(item.published_at || item.created_at).toLocaleDateString('fa-IR')}</small></span><ChevronLeft size={15}/></button>)}</div> : <p className="home-overview-empty">هنوز اطلاعیه‌ای منتشر نشده است.</p>}
+            </article>
+          </section>}
+          {isAdmin && <section className="admin-home-summary"><div><span>درخواست‌های سازمانی در انتظار</span><strong>{adminPendingRequests}</strong><button onClick={() => go('مدیریت درخواست‌ها')}>بررسی درخواست‌ها <ChevronLeft size={14}/></button></div><div><span>درخواست‌های جابه‌جایی شیفت</span><strong>{adminPendingShiftChanges}</strong><button onClick={() => go('برنامه شیفت‌ها')}>مدیریت شیفت‌ها <ChevronLeft size={14}/></button></div></section>}
           <div className="section-heading"><div><h2>دسترسی سریع</h2><p>از بخش موردنظر خود شروع کنید.</p></div></div>
           <section className="quick-grid"><Quick icon={Users} title="فهرست همکاران" text="جست‌وجو و مشاهده همکاران" onClick={() => go('همکاران')} /><Quick icon={ArrowLeftRight} title="تبادل بخش یا بیمارستان" text="ثبت درخواست جابه‌جایی سازمانی" onClick={() => go('درخواست تبادل')} /><Quick icon={ClipboardList} title="پیگیری درخواست‌ها" text="مشاهده وضعیت درخواست‌های خود" onClick={() => go('درخواست‌های من')} /></section>
           <section className="notice"><div className="notice-icon"><Bell size={20} /></div><div><strong>اطلاعیه سامانه</strong><p>اطلاعات کارکنان و درخواست‌ها فقط پس از ورود معتبر و از پایگاه داده دریافت می‌شوند.</p></div></section>
