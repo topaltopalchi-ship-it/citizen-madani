@@ -16,13 +16,14 @@ language sql
 stable
 security definer
 set search_path = ''
-as $$1 (
+as $$
+  select exists (
     select 1 from storage.objects o
     where o.bucket_id = 'employee-message-attachments'
       and o.name = object_path
       and o.owner_id = auth.uid()::text
   );
-$;
+$$;
 revoke all on function public.owns_employee_message_attachment(text) from public;
 grant execute on function public.owns_employee_message_attachment(text) to authenticated;
 drop policy if exists "Employees send direct messages" on public.direct_messages;
