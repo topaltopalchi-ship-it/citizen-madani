@@ -21,7 +21,7 @@
 1. وابستگی‌ها را نصب کنید: `npm install`
 2. فایل `.env.example` را به `.env.local` کپی کنید.
 3. مقادیر `VITE_SUPABASE_URL` و `VITE_SUPABASE_PUBLISHABLE_KEY` را از پروژه Supabase خود وارد کنید.
-4. همه Migrationها را دقیقاً به‌ترتیب زمانی اجرا کنید: `202611200001_initial_schema.sql`، `20261121000000_employee_portal.sql`، `20261121010000_manager_review.sql`، `20261121020000_announcements.sql`، `20261121030000_direct_messages.sql`، `20261121100000_employee_management.sql`، `20261121110000_harden_table_grants.sql`، `20261121120000_active_account_access.sql`، `20261121130000_admin_audit_log.sql`، `20261121140000_work_shifts_and_swaps.sql`، `20261121150000_private_message_attachments.sql`، `20261121160000_sender_message_deletion.sql`، `20261121173000_multi_message_attachments.sql`، `20261121180000_multi_attachment_storage_rls.sql` و `20261121190000_shift_swap_audit.sql` و `20261121200000_active_employee_storage_access.sql` و `20261121210000_safe_shift_swap_constraint.sql` و `20261121220000_employee_notifications.sql`.
+4. همه Migrationها را دقیقاً به‌ترتیب زمانی اجرا کنید: `202611200001_initial_schema.sql`، `20261121000000_employee_portal.sql`، `20261121010000_manager_review.sql`، `20261121020000_announcements.sql`، `20261121030000_direct_messages.sql`، `20261121100000_employee_management.sql`، `20261121110000_harden_table_grants.sql`، `20261121120000_active_account_access.sql`، `20261121130000_admin_audit_log.sql`، `20261121140000_work_shifts_and_swaps.sql`، `20261121150000_private_message_attachments.sql`، `20261121160000_sender_message_deletion.sql`، `20261121173000_multi_message_attachments.sql`، `20261121180000_multi_attachment_storage_rls.sql` و `20261121190000_shift_swap_audit.sql` و `20261121200000_active_employee_storage_access.sql` و `20261121210000_safe_shift_swap_constraint.sql` و `20261121220000_employee_notifications.sql` و `20261121230000_staff_community_and_compensation.sql`.
 5. برنامه را اجرا کنید: `npm run dev`
 
 ## ایجاد حساب کارکنان
@@ -37,6 +37,8 @@
 - مجوزهای جدول‌ها به‌صورت حداقلی بازتنظیم شده‌اند؛ مدیر فقط می‌تواند فیلدهای پرسنلی مجاز را تغییر دهد و نقش مدیریتی از رابط کاربری قابل ارتقا نیست.
 - حساب غیرفعال در سطح RLS از فهرست کارکنان، درخواست‌ها، اطلاعیه‌های منتشرشده و پیام‌های خصوصی عملیاتی محروم می‌شود؛ پروفایل پایه خودش برای نمایش پیام وضعیت باقی می‌ماند.
 - تست‌های خودکار مخزن، ترتیب Migrationها، کنترل‌های امنیت پیوست‌ها، ثبت رویدادهای جابه‌جایی شیفت، محدودیت دسترسی Storage برای حساب‌های غیرفعال و ایمنی جابه‌جایی هم‌زمان شیفت‌ها را بررسی می‌کنند. این تست‌های ایستا جایگزین اجرای Migrationها و آزمون RLS واقعی در Supabase نیستند.
+- فضای جامعه کارکنان برای آگهی تبلیغاتی، خریدوفروش کالای کارکرده، آگهی جابه‌جایی بخش و بازارچه محصولات کارکنان (ثبت آگهی با وضعیت در انتظار تأیید مدیر)
+- بخش اخبار حقوق، کارانه و اضافه‌کاری با انتشار اطلاعیه‌های تأییدشده توسط مدیران
 - مرکز اعلان‌ها از جدول `employee_notifications` استفاده می‌کند. اعلان پیام خصوصی، تغییر وضعیت درخواست‌ها و انتشار اطلاعیه توسط triggerهای دیتابیس ساخته می‌شود؛ RLS دسترسی هر کارمند را به اعلان‌های خودش محدود می‌کند. وضعیت خوانده‌شدن با Realtime همگام می‌شود.
 - پیش از استفاده عملیاتی، تنظیمات Auth، محدودیت ایمیل سازمانی، پشتیبان‌گیری، نگهداری داده‌ها و دسترسی‌های مدیریتی باید توسط مسئول فناوری اطلاعات بیمارستان بازبینی شوند.
 
