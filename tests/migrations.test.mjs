@@ -390,3 +390,22 @@ test('staff report form warns against entering identifiable patient information'
   assert.match(app, /اطلاعات قابل شناسایی بیمار/);
   assert.match(app, /report-sensitive-warning/);
 });
+
+test('community marketplace supports employee submissions and admin moderation UI', async () => {
+  const app = await readFile(new URL('../src/App.tsx', import.meta.url), 'utf8');
+  const css = await readFile(new URL('../src/styles.css', import.meta.url), 'utf8');
+  const migration = await readFile(new URL('../supabase/migrations/20261121230000_staff_community_and_compensation.sql', import.meta.url), 'utf8');
+  assert.match(app, /page === 'بازارچه و آگهی‌ها'/);
+  assert.match(app, /from\('community_listings'\)\.select/);
+  assert.match(app, /const submitCommunityListing = async/);
+  assert.match(app, /const moderateCommunityListing = async/);
+  assert.match(app, /status: 'pending' as const/);
+  assert.match(app, /تأیید و انتشار/);
+  assert.match(app, /رد آگهی/);
+  assert.match(app, /بستن آگهی/);
+  assert.match(app, /item\.status === 'approved' && new Date\(item\.expires_at\)/);
+  assert.match(migration, /Admins moderate all community listings/);
+  assert.match(migration, /Active employees submit own listings for review/);
+  assert.match(css, /\.community-card/);
+  assert.match(css, /\.community-list/);
+});
