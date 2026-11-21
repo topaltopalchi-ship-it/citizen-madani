@@ -4,7 +4,7 @@ import * as XLSX from 'xlsx'
 import mammoth from 'mammoth'
 import { supabase } from './lib/supabase'
 
-type Page = 'خانه' | 'همکاران' | 'درخواست تبادل' | 'درخواست‌های من' | 'پروفایل' | 'مدیریت درخواست‌ها' | 'مدیریت کارکنان' | 'سجل فعالیت‌ها' | 'برنامه شیفت‌ها' | 'اطلاعیه‌ها' | 'پیام‌ها' | 'مرکز اعلان‌ها'
+type Page = 'خانه' | 'همکاران' | 'درخواست تبادل' | 'درخواست‌های من' | 'پروفایل' | 'مدیریت درخواست‌ها' | 'مدیریت کارکنان' | 'سجل فعالیت‌ها' | 'برنامه شیفت‌ها' | 'اطلاعیه‌ها' | 'پیام‌ها' | 'مرکز اعلان‌ها' | 'تنظیمات شخصی'
 type Profile = { id: string; display_name: string; department: string | null; job_title: string | null; role?: string; is_active?: boolean }
 type ExchangeRequest = { id: string; employee_id?: string; request_type: string; from_unit: string; to_unit: string; note: string | null; status: string; created_at: string }
 type Announcement = { id: string; title: string; body: string; priority: 'normal' | 'important'; is_published: boolean; created_at: string; published_at: string | null }
