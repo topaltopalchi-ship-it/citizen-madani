@@ -4,7 +4,7 @@ import * as XLSX from 'xlsx'
 import mammoth from 'mammoth'
 import { supabase } from './lib/supabase'
 
-type Page = 'خانه' | 'همکاران' | 'درخواست تبادل' | 'درخواست‌های من' | 'پروفایل' | 'مدیریت درخواست‌ها' | 'مدیریت کارکنان' | 'سجل فعالیت‌ها' | 'برنامه شیفت‌ها' | 'اطلاعیه‌ها' | 'پیام‌ها' | 'مرکز اعلان‌ها' | 'تنظیمات شخصی' | 'ثبت خطا و تجربه'
+type Page = 'خانه' | 'همکاران' | 'درخواست تبادل' | 'درخواست‌های من' | 'پروفایل' | 'مدیریت درخواست‌ها' | 'مدیریت کارکنان' | 'سجل فعالیت‌ها' | 'برنامه شیفت‌ها' | 'اطلاعیه‌ها' | 'پیام‌ها' | 'مرکز اعلان‌ها' | 'تنظیمات شخصی' | 'ثبت خطا و تجربه' | 'امور رفاهی'
 type Profile = { id: string; display_name: string; department: string | null; job_title: string | null; role?: string; is_active?: boolean }
 type ExchangeRequest = { id: string; employee_id?: string; request_type: string; from_unit: string; to_unit: string; note: string | null; status: string; created_at: string }
 type Announcement = { id: string; title: string; body: string; priority: 'normal' | 'important'; is_published: boolean; created_at: string; published_at: string | null }
@@ -14,6 +14,7 @@ type AuditEntry = { id: number; actor_id: string | null; target_id: string | nul
 type WorkShift = { id: string; employee_id: string; shift_date: string; shift_type: 'morning' | 'evening' | 'night'; starts_at: string; ends_at: string; department: string; notes: string | null; created_at: string }
 type ShiftChangeRequest = { id: string; requester_id: string; from_shift_id: string; to_shift_id: string; note: string | null; status: string; reviewed_by: string | null; reviewed_at: string | null; created_at: string }
 type EmployeeNotification = { id: string; recipient_id: string; notification_type: 'direct_message' | 'exchange_request' | 'shift_swap' | 'announcement'; title: string; body: string; target_page: 'پیام‌ها' | 'درخواست‌های من' | 'برنامه شیفت‌ها' | 'اطلاعیه‌ها'; source_key: string; created_at: string; read_at: string | null }
+type WelfarePartner = { id: string; created_by: string; name: string; category: string; benefit_type: string; description: string; discount_percent: number | null; installment_terms: string | null; offer_details: string | null; address: string | null; city: string | null; phone: string | null; website_url: string | null; usage_instructions: string | null; starts_at: string | null; ends_at: string | null; status: 'draft' | 'published' | 'archived'; published_at: string | null; created_at: string }
 
 const units = ['اورژانس', 'داخلی', 'جراحی', 'ICU', 'آزمایشگاه', 'رادیولوژی', 'داروخانه', 'پذیرش', 'سایر']
 
@@ -21,7 +22,7 @@ function dateKey(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 }
 const nav: { label: Page; icon: typeof Home }[] = [
-  { label: 'خانه', icon: Home }, { label: 'همکاران', icon: Users }, { label: 'برنامه شیفت‌ها', icon: CalendarDays },
+  { label: 'خانه', icon: Home }, { label: 'همکاران', icon: Users }, { label: 'برنامه شیفت‌ها', icon: CalendarDays }, { label: 'امور رفاهی', icon: HeartHandshake },
   { label: 'درخواست تبادل', icon: ArrowLeftRight }, { label: 'درخواست‌های من', icon: ClipboardList },
   { label: 'پروفایل', icon: UserRound }, { label: 'تنظیمات شخصی', icon: Settings }, { label: 'اطلاعیه‌ها', icon: Megaphone }, { label: 'پیام‌ها', icon: Bell }, { label: 'مرکز اعلان‌ها', icon: Activity }, { label: 'ثبت خطا و تجربه', icon: AlertCircle },
 ]
@@ -71,6 +72,18 @@ function App() {
   const [unreadCount, setUnreadCount] = useState(0)
   const [notifications, setNotifications] = useState<EmployeeNotification[]>([])
   const [staffReports, setStaffReports] = useState<any[]>([])
+  const [welfarePartners, setWelfarePartners] = useState<WelfarePartner[]>([])
+  const [welfareCategoryFilter, setWelfareCategoryFilter] = useState('all')
+  const [welfareName, setWelfareName] = useState('')
+  const [welfareCategory, setWelfareCategory] = useState('sports')
+  const [welfareBenefitType, setWelfareBenefitType] = useState('discount')
+  const [welfareDescription, setWelfareDescription] = useState('')
+  const [welfareDiscount, setWelfareDiscount] = useState('')
+  const [welfareInstallments, setWelfareInstallments] = useState('')
+  const [welfareAddress, setWelfareAddress] = useState('')
+  const [welfarePhone, setWelfarePhone] = useState('')
+  const [welfareWebsite, setWelfareWebsite] = useState('')
+  const [welfareEndsAt, setWelfareEndsAt] = useState('')
   const [reportType, setReportType] = useState<'error' | 'experience'>('error')
   const [reportTitle, setReportTitle] = useState('')
   const [reportBody, setReportBody] = useState('')
@@ -240,6 +253,7 @@ function App() {
       .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, 'fa'))
       .slice(0, 6)
   }, [filteredReportShifts, colleagues])
+  const filteredWelfarePartners = useMemo(() => welfarePartners.filter(item => welfareCategoryFilter === 'all' || item.category === welfareCategoryFilter), [welfarePartners, welfareCategoryFilter])
   const filteredAuditEntries = useMemo(() => auditEntries.filter(entry => {
     const query = auditQuery.trim().toLocaleLowerCase('fa')
     const searchable = [auditActionLabel(entry.action), entry.entity_type, entry.action, entry.target_id || '', entry.actor_id || '', JSON.stringify(entry.details)].join(' ').toLocaleLowerCase('fa')
@@ -438,6 +452,9 @@ function App() {
       const { data: announcementData, error: announcementError } = await client.from('announcements').select('id,title,body,priority,is_published,created_at,published_at').order('created_at', { ascending: false })
       if (active && announcementError) setError(announcementError.message)
       if (active && announcementData) setAnnouncements(announcementData)
+      const { data: welfareData, error: welfareError } = await client.from('welfare_partners').select('id,created_by,name,category,benefit_type,description,discount_percent,installment_terms,offer_details,address,city,phone,website_url,usage_instructions,starts_at,ends_at,status,published_at,created_at').order('created_at', { ascending: false }).limit(300)
+      if (active && welfareError) setError('بارگذاری قراردادهای رفاهی انجام نشد؛ Migration امور رفاهی را بررسی کنید.')
+      if (active && welfareData) setWelfarePartners(welfareData as WelfarePartner[])
       const [shiftResult, shiftRequestResult] = await Promise.all([
         client.from('work_shifts').select('id,employee_id,shift_date,shift_type,starts_at,ends_at,department,notes,created_at').gte('shift_date', dateKey(new Date(new Date().getFullYear() - 1, new Date().getMonth(), 1))).lte('shift_date', dateKey(new Date(new Date().getFullYear() + 1, new Date().getMonth() + 1, 0))).order('shift_date').order('starts_at').limit(1500),
         client.from('shift_change_requests').select('id,requester_id,from_shift_id,to_shift_id,note,status,reviewed_by,reviewed_at,created_at').order('created_at', { ascending: false }).limit(200),
@@ -616,6 +633,34 @@ function App() {
     const { error: logoutError } = await supabase.auth.signOut()
     if (logoutError) setError(logoutError.message)
     else { setPage('خانه'); setSelectedContact(null); setThreadMessages([]); setInboxMessages([]); setMessageDraft(''); setContactQuery(''); setUnreadCount(0); setMessage('از حساب کاربری خارج شدید.') }
+  }
+
+  const submitWelfarePartner = async (e: FormEvent) => {
+    e.preventDefault()
+    if (!supabase || !profile || !isAdmin) return
+    if (welfareBenefitType === 'discount' && (!welfareDiscount || Number(welfareDiscount) < 0 || Number(welfareDiscount) > 100)) { setError('درصد تخفیف باید بین صفر تا صد باشد.'); return }
+    if (welfareBenefitType === 'installment' && !welfareInstallments.trim()) { setError('شرایط فروش اقساطی را وارد کنید.'); return }
+    setBusy(true); setError(''); setMessage('')
+    const { data, error: insertError } = await supabase.from('welfare_partners').insert({
+      created_by: profile.id, name: welfareName.trim(), category: welfareCategory, benefit_type: welfareBenefitType,
+      description: welfareDescription.trim(), discount_percent: welfareBenefitType === 'discount' ? Number(welfareDiscount) : null,
+      installment_terms: welfareBenefitType === 'installment' ? welfareInstallments.trim() : null,
+      address: welfareAddress.trim() || null, phone: welfarePhone.trim() || null, website_url: welfareWebsite.trim() || null,
+      ends_at: welfareEndsAt ? new Date(`${welfareEndsAt}T23:59:59`).toISOString() : null,
+      status: 'published', published_at: new Date().toISOString(),
+    }).select('id,created_by,name,category,benefit_type,description,discount_percent,installment_terms,offer_details,address,city,phone,website_url,usage_instructions,starts_at,ends_at,status,published_at,created_at').single()
+    if (insertError) setError('ثبت قرارداد رفاهی انجام نشد؛ مجوز مدیر و Migration را بررسی کنید.')
+    else { setWelfarePartners(current => [data as WelfarePartner, ...current]); setWelfareName(''); setWelfareDescription(''); setWelfareDiscount(''); setWelfareInstallments(''); setWelfareAddress(''); setWelfarePhone(''); setWelfareWebsite(''); setWelfareEndsAt(''); setMessage('قرارداد رفاهی منتشر شد.') }
+    setBusy(false)
+  }
+
+  const setWelfareStatus = async (item: WelfarePartner, status: 'published' | 'archived') => {
+    if (!supabase || !isAdmin || busy) return
+    setBusy(true); setError('')
+    const { error: updateError } = await supabase.from('welfare_partners').update({ status, published_at: status === 'published' ? item.published_at || new Date().toISOString() : item.published_at }).eq('id', item.id)
+    if (updateError) setError('تغییر وضعیت قرارداد رفاهی انجام نشد.')
+    else setWelfarePartners(current => current.map(row => row.id === item.id ? { ...row, status, published_at: status === 'published' ? item.published_at || new Date().toISOString() : item.published_at } : row))
+    setBusy(false)
   }
 
   const submitRequest = async (e: FormEvent) => {
@@ -1052,6 +1097,22 @@ function App() {
         {message && <div className="notice"><div className="notice-icon"><ShieldCheck size={20} /></div><div><strong>پیام سامانه</strong><p>{message}</p></div><button className="small-outline" onClick={() => setMessage('')}>بستن</button></div>}
         {error && <div className="notice" role="alert"><div className="notice-icon"><Bell size={20} /></div><div><strong>توجه</strong><p>{error}</p></div><button className="small-outline" onClick={() => setError('')}>بستن</button></div>}
         {!configured && <div className="notice"><div className="notice-icon"><Activity size={20} /></div><div><strong>اتصال پایگاه داده تنظیم نشده است</strong><p>برای فعال‌سازی ورود و ذخیره اطلاعات، متغیرهای Supabase را در تنظیمات محیط اجرا وارد کنید.</p></div></div>}
+        {page === 'امور رفاهی' && <section className="panel welfare-panel">
+          <div className="panel-title"><div><h2>امور رفاهی کارکنان</h2><p>قراردادها و امتیازهای معتبر مجموعه‌های طرف قرارداد با بیمارستان</p></div><HeartHandshake size={25}/></div>
+          {!userEmail ? <LoginPrompt onLogin={() => setShowLogin(true)} /> : <>
+            {isAdmin && <form className="welfare-admin-form" onSubmit={submitWelfarePartner}>
+              <h3>ثبت قرارداد یا پیشنهاد جدید</h3>
+              <div className="field-grid"><div><label>نام مجموعه</label><input required minLength={2} maxLength={160} value={welfareName} onChange={e=>setWelfareName(e.target.value)} placeholder="مثلاً استخر ..."/></div><div><label>دسته‌بندی</label><select value={welfareCategory} onChange={e=>setWelfareCategory(e.target.value)}><option value="sports">ورزش و تفریح</option><option value="shopping">فروشگاه و خرید اقساطی</option><option value="food">رستوران و غذا</option><option value="health">درمان و سلامت</option><option value="travel">سفر و اقامت</option><option value="education">آموزش</option><option value="services">خدمات</option><option value="other">سایر</option></select></div></div>
+              <div className="field-grid"><div><label>نوع امتیاز</label><select value={welfareBenefitType} onChange={e=>setWelfareBenefitType(e.target.value)}><option value="discount">تخفیف درصدی</option><option value="installment">فروش اقساطی</option><option value="special_price">قیمت ویژه</option><option value="other">سایر مزایا</option></select></div>{welfareBenefitType==='discount' ? <div><label>درصد تخفیف</label><input type="number" min="0" max="100" step="0.01" required value={welfareDiscount} onChange={e=>setWelfareDiscount(e.target.value)} placeholder="مثلاً ۴۰"/></div> : welfareBenefitType==='installment' ? <div><label>شرایط اقساط</label><input required maxLength={1000} value={welfareInstallments} onChange={e=>setWelfareInstallments(e.target.value)} placeholder="مثلاً ۶ قسط بدون پیش‌پرداخت"/></div> : <div><label>جزئیات امتیاز</label><input value={welfareInstallments} onChange={e=>setWelfareInstallments(e.target.value)} placeholder="شرایط استفاده"/></div>}</div>
+              <label>شرح قرارداد و خدمات</label><textarea required minLength={5} maxLength={3000} rows={3} value={welfareDescription} onChange={e=>setWelfareDescription(e.target.value)} placeholder="خدمات قابل ارائه و شرایط استفاده برای کارکنان..."/>
+              <div className="field-grid"><div><label>نشانی</label><input maxLength={500} value={welfareAddress} onChange={e=>setWelfareAddress(e.target.value)} placeholder="نشانی مجموعه"/></div><div><label>تلفن</label><input maxLength={40} value={welfarePhone} onChange={e=>setWelfarePhone(e.target.value)} placeholder="شماره تماس"/></div></div>
+              <div className="field-grid"><div><label>وب‌سایت (اختیاری)</label><input type="url" value={welfareWebsite} onChange={e=>setWelfareWebsite(e.target.value)} placeholder="https://..."/></div><div><label>تاریخ پایان اعتبار (اختیاری)</label><input type="date" value={welfareEndsAt} onChange={e=>setWelfareEndsAt(e.target.value)}/></div></div>
+              <button className="primary-btn" disabled={busy || !welfareName.trim() || !welfareDescription.trim()}>انتشار قرارداد برای کارکنان</button>
+            </form>}
+            <div className="welfare-filter-row"><strong>قراردادهای رفاهی</strong><select aria-label="فیلتر دسته‌بندی امور رفاهی" value={welfareCategoryFilter} onChange={e=>setWelfareCategoryFilter(e.target.value)}><option value="all">همه دسته‌ها</option><option value="sports">ورزش و تفریح</option><option value="shopping">فروشگاه و خرید</option><option value="food">رستوران و غذا</option><option value="health">درمان و سلامت</option><option value="travel">سفر و اقامت</option><option value="education">آموزش</option><option value="services">خدمات</option><option value="other">سایر</option></select></div>
+            {filteredWelfarePartners.filter(item=>isAdmin || item.status==='published').length===0 ? <div className="empty-state"><HeartHandshake size={34}/><strong>قرارداد فعالی برای نمایش وجود ندارد</strong><span>با انتشار قرارداد جدید، امتیازهای رفاهی کارکنان در این بخش نمایش داده می‌شوند.</span></div> : <div className="welfare-list">{filteredWelfarePartners.filter(item=>isAdmin || item.status==='published').map(item=><article className="welfare-card" key={item.id}><div className="welfare-card-top"><span className="welfare-category">{({sports:'ورزش و تفریح',shopping:'فروشگاه و خرید',food:'رستوران و غذا',health:'درمان و سلامت',travel:'سفر و اقامت',education:'آموزش',services:'خدمات',other:'سایر'} as Record<string,string>)[item.category] || 'امور رفاهی'}</span><span className={item.status==='published'?'welfare-active':'welfare-archived'}>{item.status==='published'?'منتشرشده':item.status==='draft'?'پیش‌نویس':'بایگانی‌شده'}</span></div><h3>{item.name}</h3><p>{item.description}</p><div className="welfare-benefit">{item.benefit_type==='discount' ? `تخفیف ${item.discount_percent}%` : item.benefit_type==='installment' ? `فروش اقساطی: ${item.installment_terms}` : item.offer_details || 'مزیت ویژه کارکنان'}</div>{item.address&&<small>نشانی: {item.address}</small>}{item.phone&&<small>تلفن: {item.phone}</small>}{item.website_url&&<a href={item.website_url} target="_blank" rel="noreferrer">مشاهده وب‌سایت مجموعه</a>}{item.ends_at&&<small>اعتبار تا: {new Date(item.ends_at).toLocaleDateString('fa-IR')}</small>}{isAdmin&&<div className="welfare-admin-actions">{item.status==='published'?<button className="reject-btn" disabled={busy} onClick={()=>setWelfareStatus(item,'archived')}>بایگانی قرارداد</button>:<button className="small-outline" disabled={busy} onClick={()=>setWelfareStatus(item,'published')}>انتشار مجدد</button>}</div>}</article>)}</div>}
+          </>}
+        </section>}
         {page === 'مرکز اعلان‌ها' && <section className="panel notification-center">
           <div className="panel-title"><div><h2>مرکز اعلان‌ها</h2><p>اعلان‌های ذخیره‌شده و همگام‌شده با حساب کاربری شما</p></div><div className="notification-panel-actions"><span className="count-pill">{unreadNotificationCount} خوانده‌نشده</span>{unreadNotificationCount > 0 && <button className="small-outline" onClick={markAllNotificationsRead}>خواندن همه</button>}</div></div>
           {!userEmail ? <LoginPrompt onLogin={() => setShowLogin(true)} /> : activityNotifications.length === 0 ? <div className="empty-state"><Bell size={36}/><strong>اعلان تازه‌ای ندارید</strong><span>با دریافت پیام، بررسی درخواست یا انتشار اطلاعیه، اعلان در این بخش ذخیره می‌شود.</span></div> : <>
@@ -1098,7 +1159,7 @@ function App() {
             </div>
           </section>}
           <div className="section-heading"><div><h2>دسترسی سریع</h2><p>از بخش موردنظر خود شروع کنید.</p></div></div>
-          <section className="quick-grid"><Quick icon={Users} title="فهرست همکاران" text="جست‌وجو و مشاهده همکاران" onClick={() => go('همکاران')} /><Quick icon={ArrowLeftRight} title="تبادل بخش یا بیمارستان" text="ثبت درخواست جابه‌جایی سازمانی" onClick={() => go('درخواست تبادل')} /><Quick icon={ClipboardList} title="پیگیری درخواست‌ها" text="مشاهده وضعیت درخواست‌های خود" onClick={() => go('درخواست‌های من')} /></section>
+          <section className="quick-grid"><Quick icon={Users} title="فهرست همکاران" text="جست‌وجو و مشاهده همکاران" onClick={() => go('همکاران')} /><Quick icon={ArrowLeftRight} title="تبادل بخش یا بیمارستان" text="ثبت درخواست جابه‌جایی سازمانی" onClick={() => go('درخواست تبادل')} /><Quick icon={ClipboardList} title="پیگیری درخواست‌ها" text="مشاهده وضعیت درخواست‌های خود" onClick={() => go('درخواست‌های من')} /><Quick icon={HeartHandshake} title="امور رفاهی" text="تخفیف‌ها و قراردادهای کارکنان" onClick={() => go('امور رفاهی')} /><Quick icon={AlertCircle} title="ثبت خطا و تجربه" text="ارسال گزارش متنی یا صوتی" onClick={() => go('ثبت خطا و تجربه')} /></section>
           <section className="notice"><div className="notice-icon"><Bell size={20} /></div><div><strong>اطلاعیه سامانه</strong><p>اطلاعات کارکنان و درخواست‌ها فقط پس از ورود معتبر و از پایگاه داده دریافت می‌شوند.</p></div></section>
         </>}
         {page === 'همکاران' && <section className="panel"><div className="panel-title"><div><h2>فهرست همکاران</h2><p>فهرست کارکنان فعال بیمارستان مدنی</p></div><span className="count-pill">{userEmail ? filtered.length : '—'} نفر</span></div>{!userEmail ? <LoginPrompt onLogin={() => setShowLogin(true)} /> : <><div className="search-box"><Search size={18} /><input value={query} onChange={e => setQuery(e.target.value)} placeholder="جست‌وجوی نام، سمت یا بخش..." /></div><div className="people-list">{filtered.map(c => <div className="person-row" key={c.id}><div className="avatar">{c.display_name?.slice(0, 1) || 'ک'}</div><div className="person-info"><strong>{c.display_name}</strong><span>{c.job_title || 'کارمند'}{c.department ? ' · بخش ' + c.department : ''}</span></div></div>)}</div>{filtered.length === 0 && <p className="demo-note">کارمند فعالی برای نمایش ثبت نشده است.</p>}</>}</section>}
@@ -1251,7 +1312,7 @@ function App() {
             <form className="staff-report-form" onSubmit={submitStaffReport}>
               <div className="report-type-switch"><button type="button" className={reportType==='error'?'active':''} onClick={()=>setReportType('error')}><AlertCircle size={17}/> ثبت خطا و مشکل</button><button type="button" className={reportType==='experience'?'active':''} onClick={()=>setReportType('experience')}><Lightbulb size={17}/> ثبت تجربه مفید</button></div>
               <label htmlFor="staff-report-title">عنوان گزارش</label><input id="staff-report-title" required minLength={3} maxLength={160} value={reportTitle} onChange={e=>setReportTitle(e.target.value)} placeholder={reportType==='error'?'مثلاً مشکل در فرایند تحویل شیفت':'مثلاً تجربه موفق در هماهنگی تیمی'}/>
-              <label htmlFor="staff-report-body">شرح گزارش</label><textarea id="staff-report-body" required minLength={5} maxLength={5000} rows={5} value={reportBody} onChange={e=>setReportBody(e.target.value)} placeholder="موضوع را با جزئیات لازم و بدون درج اطلاعات حساس بیماران توضیح دهید..."/>
+              <label htmlFor="staff-report-body">شرح گزارش</label><textarea id="staff-report-body" required minLength={5} maxLength={5000} rows={5} value={reportBody} onChange={e=>setReportBody(e.target.value)} placeholder="موضوع را با جزئیات لازم و بدون درج اطلاعات حساس بیماران توضیح دهید..."/><div className="report-sensitive-warning"><ShieldCheck size={16}/> لطفاً نام، کد ملی، شماره پرونده، تصویر، نتیجه آزمایش یا هرگونه اطلاعات قابل شناسایی بیمار را در متن یا فایل صوتی وارد نکنید.</div>
               <div className="report-audio-box"><div><strong><Mic size={17}/> پیام صوتی (اختیاری)</strong><span>حداکثر ۱۰ مگابایت؛ در کنار توضیح متنی</span></div>{!recording ? <button type="button" className="small-outline" onClick={startReportRecording}><Mic size={16}/> شروع ضبط</button> : <button type="button" className="reject-btn" onClick={stopReportRecording}><Square size={15}/> پایان ضبط</button>}{reportAudioUrl && <div className="report-audio-preview"><audio controls src={reportAudioUrl}/><button type="button" className="small-outline" onClick={()=>{setReportAudio(null);URL.revokeObjectURL(reportAudioUrl);setReportAudioUrl('')}}>حذف صدا</button></div>}</div>
               <p className="report-privacy-note"><ShieldCheck size={16}/> گزارش فقط برای شما و مدیران مجاز قابل مشاهده است.</p>
               <button className="primary-btn" disabled={busy || recording || !reportTitle.trim() || !reportBody.trim()}>{busy?'در حال ثبت...':'ثبت محرمانه گزارش'}</button>
