@@ -625,3 +625,18 @@ body{background:radial-gradient(ellipse at 12% 0%,#e4f2f1 0,transparent 34%),lin
 .notification-icon.exchange_request{background:#fff3e5;color:#a87536}
 .notification-icon.shift_swap{background:#f0ebff;color:#7958a7}
 .notification-icon.announcement{background:#e9f6ef;color:#37805a}
+
+
+/* Notification center filters */
+.notification-filters,.notification-type-filters{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:12px 0}
+.notification-filters button,.notification-type-filters button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:35px;padding:7px 12px;border:1px solid #dfeae7;border-radius:11px;background:linear-gradient(145deg,#fff,#f3f8f6);color:#668087;font:inherit;font-size:10px;font-weight:800;box-shadow:inset 0 1px #fff,0 3px 7px #244c5809;cursor:pointer;transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease}
+.notification-filters button:hover,.notification-type-filters button:hover{transform:translateY(-1px);border-color:#a9d4c8}
+.notification-filters button.active,.notification-type-filters button.active{border-color:#55a795;background:linear-gradient(145deg,#e7f7f0,#eaf2fb);color:#24796e;box-shadow:inset 0 1px #fff,0 4px 9px #368b7a1c}
+.notification-filters button b{display:grid;place-items:center;min-width:19px;height:19px;padding:0 5px;border-radius:7px;background:#eaf2f0;color:#52756f;font-size:9px;font-variant-numeric:tabular-nums}
+.notification-filters button.active b{background:linear-gradient(145deg,#3da58e,#287e78);color:#fff}
+.notification-type-filters{margin-top:0;padding-bottom:12px;border-bottom:1px solid #edf2f0}
+.notification-filter-empty{display:grid;justify-items:center;gap:9px;padding:30px 15px;border:1px dashed #dce9e6;border-radius:14px;background:#f9fcfb;color:#80969a;text-align:center}
+.notification-filter-empty strong{color:#42666b;font-size:12px}
+.notification-filter-empty span{font-size:10px;line-height:1.8}
+.notification-filter-empty .small-outline{margin-top:4px}
+@media(max-width:520px){.notification-filters,.notification-type-filters{gap:6px}.notification-filters button,.notification-type-filters button{flex:1 1 auto;min-height:37px;padding:7px 9px;font-size:9px}}
