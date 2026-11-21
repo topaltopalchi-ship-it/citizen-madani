@@ -106,7 +106,7 @@ function App() {
     evening: calendarMonthShifts.filter(shift => shift.shift_type === 'evening').length,
     night: calendarMonthShifts.filter(shift => shift.shift_type === 'night').length,
     employees: new Set(calendarMonthShifts.map(shift => shift.employee_id)).size,
-    departments: [...calendarMonthShifts.reduce((map, shift) => map.set(shift.department, (map.get(shift.department) || 0) + 1), new Map<string, number>())]
+    departments: Array.from(calendarMonthShifts.reduce((map, shift) => map.set(shift.department, (map.get(shift.department) || 0) + 1), new Map<string, number>()).entries())
       .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'fa')),
   }), [calendarMonthShifts])
   const exportShiftCalendar = () => {
