@@ -263,5 +263,6 @@ test('admin audit log supports local search, entity filters, and filtered CSV ex
   assert.match(app, /citizen-madani-admin-audit\.csv/);
   assert.match(app, /جست‌وجوی سجل فعالیت‌ها/);
   assert.match(app, /خروجی CSV/);
-  assert.match(app, /const csv = '\\\\uFEFF'[\\s\\S]*join\\('\\\\r\\\\n'\\)/);
+  assert.ok(app.includes(String.raw`const csv = '\uFEFF'`));
+  assert.ok(app.includes(String.raw`join('\\r\\n')`));
 });
