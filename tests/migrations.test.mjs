@@ -194,3 +194,20 @@ test('personal settings persist page, notification filter, and compact layout pr
   assert.match(css, /\.compact-mode/);
   assert.match(css, /\.settings-switch/);
 });
+
+
+test('admin home dashboard derives operational metrics from loaded records and links to real admin pages', async () => {
+  const app = await readFile(new URL('../src/App.tsx', import.meta.url), 'utf8');
+  const css = await readFile(new URL('../src/styles.css', import.meta.url), 'utf8');
+  assert.match(app, /className="admin-dashboard"/);
+  assert.match(app, /activeEmployeeCount/);
+  assert.match(app, /adminPendingRequests/);
+  assert.match(app, /adminPendingShiftChanges/);
+  assert.match(app, /calendarMonthShifts\.length/);
+  assert.match(app, /adminDepartmentStats/);
+  assert.match(app, /go\('مدیریت کارکنان'\)/);
+  assert.match(app, /go\('سجل فعالیت‌ها'\)/);
+  assert.match(css, /\.admin-dashboard-stats/);
+  assert.match(css, /\.admin-department-track/);
+  assert.match(css, /@media\(max-width:520px\)\{\.admin-dashboard/);
+});
