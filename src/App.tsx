@@ -151,6 +151,19 @@ function App() {
     const [year, month] = shift.shift_date.split('-').map(Number)
     return year === calendarMonth.getFullYear() && month === calendarMonth.getMonth() + 1
   }), [calendarMonth, workShifts])
+  const sixMonthShiftTrend = useMemo(() => Array.from({ length: 6 }, (_, index) => {
+    const monthDate = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 5 + index, 1)
+    const year = monthDate.getFullYear()
+    const month = monthDate.getMonth() + 1
+    const count = workShifts.filter(shift => {
+      const [shiftYear, shiftMonth] = shift.shift_date.split('-').map(Number)
+      return shiftYear === year && shiftMonth === month &&
+        (reportDepartment === 'all' || shift.department === reportDepartment) &&
+        (reportShiftType === 'all' || shift.shift_type === reportShiftType) &&
+        (reportEmployee === 'all' || shift.employee_id === reportEmployee)
+    }).length
+    return { key: `${year}-${String(month).padStart(2, '0')}`, label: monthDate.toLocaleDateString('fa-IR', { month: 'short' }), count }
+  }), [calendarMonth, workShifts, reportDepartment, reportShiftType, reportEmployee])
   const reportDepartments = useMemo(() => [...new Set(calendarMonthShifts.map(shift => shift.department))].sort((a, b) => a.localeCompare(b, 'fa')), [calendarMonthShifts])
   const reportEmployees = useMemo(() => [...new Set(calendarMonthShifts.map(shift => shift.employee_id))]
     .map(id => colleagues.find(person => person.id === id)).filter((person): person is Profile => Boolean(person))
@@ -1015,6 +1028,17 @@ function App() {
                <label>کارمند<select value={reportEmployee} onChange={e => setReportEmployee(e.target.value)}><option value="all">همه کارکنان</option>{reportEmployees.map(employee => <option key={employee.id} value={employee.id}>{employee.display_name}</option>)}</select></label>
                <button type="button" className="small-outline" onClick={resetShiftReportFilters} disabled={reportDepartment === 'all' && reportShiftType === 'all' && reportEmployee === 'all'}>پاک‌کردن فیلترها</button>
              </div>
+             <section className="shift-chart-card shift-six-month-card" aria-label="روند شش ماهه شیفت‌ها">
+               <div className="shift-chart-heading"><strong>روند شش‌ماهه شیفت‌ها</strong><span>با فیلترهای فعلی · شامل ماه‌های بدون شیفت</span></div>
+               <div className="shift-six-month-chart" role="img" aria-label="نمودار تعداد شیفت‌ها در شش ماه اخیر">
+                 {sixMonthShiftTrend.map(item => {
+                   const max = Math.max(...sixMonthShiftTrend.map(month => month.count), 1)
+                   return <div className="shift-six-month-column" key={item.key} title={item.key + ' · ' + item.count + ' شیفت'}>
+                     <strong>{item.count}</strong><span style={{height: Math.max(4, item.count / max * 100) + '%'}}/><small>{item.label}</small>
+                   </div>
+                 })}
+               </div>
+             </section>
              <div className="shift-month-summary" aria-label="گزارش آماری شیفت‌های ماه">
                <div className="shift-summary-total"><span>مجموع شیفت‌ها</span><strong>{monthlyShiftStats.total}</strong><small>{monthlyShiftStats.employees} کارمند برنامه‌ریزی‌شده</small></div>
                <div className="shift-summary-item morning"><span>شیفت صبح</span><strong>{monthlyShiftStats.morning}</strong></div>
