@@ -7,6 +7,11 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+
+# Push and pull-request events for the same branch share one CI slot.
+concurrency:
+  group: citizen-madani-${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
 jobs:
   build:
     runs-on: ubuntu-latest
