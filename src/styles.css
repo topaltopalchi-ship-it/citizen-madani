@@ -651,3 +651,9 @@ body{background:radial-gradient(ellipse at 12% 0%,#e4f2f1 0,transparent 34%),lin
 .account-password-form input:focus{border-color:#60a69d;box-shadow:0 0 0 3px #60a69d1c}
 .account-password-form .primary-btn{justify-self:start;margin-top:5px}
 @media(max-width:600px){.account-password-form .primary-btn{width:100%}}
+
+
+.profile-security-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:9px;margin-top:8px}
+.global-signout-btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:42px;padding:9px 14px;border-radius:12px;font:inherit;font-size:12px;font-weight:800}
+.global-signout-btn:disabled,.profile-security-actions .primary-btn:disabled{opacity:.6;cursor:wait}
+@media(max-width:520px){.profile-security-actions{width:100%}.profile-security-actions button{width:100%}}
