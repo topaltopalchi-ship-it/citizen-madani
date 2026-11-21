@@ -69,3 +69,12 @@ test('same-slot shift swaps defer uniqueness checks and lock rows deterministica
   assert.match(sql, /set employee_id = case[\s\S]*?where id in \(new\.from_shift_id, new\.to_shift_id\)/i);
   assert.match(sql, /public\.is_citizen_madani_admin\(\)/i);
 });
+
+
+test('shift scheduling defaults and past-date validation use the browser local calendar date', async () => {
+  const app = await readFile(new URL('../src/App.tsx', import.meta.url), 'utf8');
+  assert.match(app, /const \[shiftDate, setShiftDate\] = useState\(\(\) => dateKey\(new Date\(\)\)\)/);
+  assert.match(app, /shiftDate < dateKey\(new Date\(\)\)/);
+  assert.match(app, /min=\{dateKey\(new Date\(\)\)\}/);
+  assert.doesNotMatch(app, /new Date\(\)\.toISOString\(\)\.slice\(0, 10\)/);
+});
