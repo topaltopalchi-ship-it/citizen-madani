@@ -424,3 +424,14 @@ test('compensation notices are draft-first and published through administrator c
   assert.match(migration, /Admins manage compensation updates/);
   assert.match(css, /\.compensation-card/);
 });
+
+test('marketplace rejection requires and persists a moderation reason', async () => {
+  const app = await readFile(new URL('../src/App.tsx', import.meta.url), 'utf8');
+  const css = await readFile(new URL('../src/styles.css', import.meta.url), 'utf8');
+  assert.match(app, /status === 'rejected' && note\.length < 5/);
+  assert.match(app, /moderation_note: note \|\| null/);
+  assert.match(app, /communityModerationNotes\[item\.id\]/);
+  assert.match(app, /دلیل رد یا توضیح بررسی/);
+  assert.match(app, /توضیح بررسی:/);
+  assert.match(css, /\.community-moderation-editor/);
+});
