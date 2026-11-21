@@ -193,6 +193,23 @@ function App() {
     document.body.appendChild(link); link.click(); link.remove(); URL.revokeObjectURL(url)
   }
 
+  const exportShiftCalendarExcel = () => {
+    const rows = filteredReportShifts.map(shift => ({
+      'تاریخ': shift.shift_date,
+      'نام کارمند': colleagues.find(person => person.id === shift.employee_id)?.display_name || 'کارمند',
+      'بخش': shift.department,
+      'نوع شیفت': shiftTypeLabel(shift.shift_type),
+      'ساعت شروع': shift.starts_at.slice(0, 5),
+      'ساعت پایان': shift.ends_at.slice(0, 5),
+      'توضیحات': shift.notes || '',
+    }))
+    const worksheet = XLSX.utils.json_to_sheet(rows)
+    worksheet['!cols'] = [{ wch: 14 }, { wch: 24 }, { wch: 18 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 36 }]
+    const workbook = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'گزارش شیفت')
+    XLSX.writeFile(workbook, `shift-report-${calendarMonth.getFullYear()}-${String(calendarMonth.getMonth() + 1).padStart(2, '0')}.xlsx`)
+  }
+
   const pendingMyRequests = myRequests.filter(request => request.status === 'pending').length
   const approvedMyRequests = myRequests.filter(request => request.status === 'approved').length
   const publishedAnnouncementCount = announcements.filter(item => item.is_published).length
@@ -948,7 +965,8 @@ function App() {
                  <button type="button" className="small-outline" onClick={() => { setCalendarMonth(current => new Date(current.getFullYear(), current.getMonth() - 1, 1)); resetShiftReportFilters() }} aria-label="ماه قبل"><ChevronLeft size={16}/></button>
                  <strong>{calendarMonth.toLocaleDateString('fa-IR', { month: 'long', year: 'numeric' })}</strong>
                  <button type="button" className="small-outline calendar-next" onClick={() => { setCalendarMonth(current => new Date(current.getFullYear(), current.getMonth() + 1, 1)); resetShiftReportFilters() }} aria-label="ماه بعد"><ChevronLeft size={16}/></button>
-                 <button type="button" className="primary-btn calendar-export" onClick={exportShiftCalendar} disabled={filteredReportShifts.length === 0}>خروجی گزارش</button>
+                 <button type="button" className="primary-btn calendar-export" onClick={exportShiftCalendar} disabled={filteredReportShifts.length === 0}>خروجی CSV</button>
+                 <button type="button" className="secondary-btn calendar-export" onClick={exportShiftCalendarExcel} disabled={filteredReportShifts.length === 0}><FileText size={15}/> خروجی Excel</button>
                </div>
              </div>
              <div className="shift-report-filters" aria-label="فیلتر گزارش شیفت‌ها">
