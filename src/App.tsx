@@ -178,6 +178,19 @@ function App() {
       .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, 'fa'))
       .slice(0, 6)
   }, [filteredReportShifts, colleagues])
+  const employeeWorkloadStats = useMemo(() => {
+    const counts = new Map<string, number>()
+    filteredReportShifts.forEach(shift => counts.set(shift.employee_id, (counts.get(shift.employee_id) || 0) + 1))
+    return colleagues
+      .filter(person => person.is_active !== false)
+      .filter(person => reportDepartment === 'all' || person.department === reportDepartment)
+      .filter(person => reportEmployee === 'all' || person.id === reportEmployee)
+      .map(person => ({ id: person.id, name: person.display_name, department: person.department || 'بدون بخش', count: counts.get(person.id) || 0 }))
+      .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, 'fa'))
+  }, [colleagues, filteredReportShifts, reportDepartment, reportEmployee])
+  const averageEmployeeShifts = employeeWorkloadStats.length
+    ? filteredReportShifts.length / employeeWorkloadStats.length
+    : 0
   const resetShiftReportFilters = () => { setReportDepartment('all'); setReportShiftType('all'); setReportEmployee('all') }
   const exportShiftCalendar = () => {
     const rows = [['تاریخ', 'نام کارمند', 'بخش', 'نوع شیفت', 'ساعت شروع', 'ساعت پایان', 'توضیحات']]
@@ -995,6 +1008,11 @@ function App() {
                  {employeeShiftStats.length === 0 ? <p className="shift-chart-empty">داده‌ای برای نمایش وجود ندارد.</p> : <div className="shift-employee-bars">{employeeShiftStats.map(item => <div className="shift-employee-bar" key={item.id}><div><span>{item.name}</span><b>{item.count}</b></div><span className="shift-employee-track"><i style={{width: (item.count / employeeShiftStats[0].count * 100) + '%'}}/></span></div>)}</div>}
                </section>
              </div>
+             <section className="shift-workload-card">
+               <div className="shift-chart-heading"><strong>توزیع بار کاری کارکنان</strong><span>{employeeWorkloadStats.length} کارمند فعال</span></div>
+               <p className="shift-workload-summary">میانگین شیفت در بازه و فیلتر فعلی: <b>{averageEmployeeShifts.toLocaleString('fa-IR', { maximumFractionDigits: 1 })}</b> شیفت برای هر کارمند</p>
+               {employeeWorkloadStats.length === 0 ? <p className="shift-chart-empty">کارمند فعالی برای این فیلتر وجود ندارد.</p> : <div className="shift-workload-table-wrap"><table className="shift-workload-table"><thead><tr><th>کارمند</th><th>بخش</th><th>تعداد شیفت</th><th>نسبت به میانگین</th></tr></thead><tbody>{employeeWorkloadStats.map(item => <tr key={item.id}><td>{item.name}</td><td>{item.department}</td><td><b>{item.count.toLocaleString('fa-IR')}</b></td><td><span className={'workload-status ' + (item.count > averageEmployeeShifts * 1.25 ? 'above' : item.count < averageEmployeeShifts * 0.75 ? 'below' : 'balanced')}>{item.count > averageEmployeeShifts * 1.25 ? 'بالاتر' : item.count < averageEmployeeShifts * 0.75 ? 'پایین‌تر' : 'نزدیک میانگین'}</span></td></tr>)}</tbody></table></div>}
+             </section>
              <div className="shift-calendar-grid shift-calendar-weekdays">{['شنبه','یکشنبه','دوشنبه','سه‌شنبه','چهارشنبه','پنجشنبه','جمعه'].map(day => <div key={day}>{day}</div>)}</div>
              <div className="shift-calendar-grid shift-calendar-days">{calendarCells.map((cell, index) => cell ? <div className={'shift-calendar-day' + (cell.key === dateKey(new Date()) ? ' today' : '')} key={cell.key}>
                <strong>{cell.date.toLocaleDateString('fa-IR', { day: 'numeric' })}</strong>
